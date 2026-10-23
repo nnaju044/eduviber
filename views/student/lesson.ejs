@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>
+        <%= lesson.title %> | <%= course.title %>
+    </title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .video-frame {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: #080808;
+            overflow: hidden;
+            border-radius: 12px;
+        }
+
+        .video-frame iframe {
+            width: 100%;
+            height: 100%;
+            border: 0;
+            position: absolute;
+            inset: 0;
+        }
+
+        .email-watermark {
+            position: absolute;
+            z-index: 5;
+            pointer-events: none;
+            color: white;
+            background: rgb(0 0 0 / 40%);
+            border-radius: 4px;
+            padding: 5px 8px;
+            font-size: clamp(10px, 1.3vw, 14px);
+            opacity: 0.78;
+            max-width: 85%;
+            overflow-wrap: anywhere;
+            animation: watermark-move 24s infinite;
+        }
+
+        @keyframes watermark-move {
+
+            0%,
+            20% {
+                top: 8%;
+                left: 5%;
+            }
+
+            25%,
+            45% {
+                top: 8%;
+                left: auto;
+                right: 5%;
+            }
+
+            50%,
+            70% {
+                top: auto;
+                bottom: 9%;
+                left: 5%;
+            }
+
+            75%,
+            95% {
+                top: auto;
+                bottom: 9%;
+                left: auto;
+                right: 5%;
+            }
+
+            100% {
+                top: 8%;
+                left: 5%;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-900">
+    <header class="bg-white border-b">
+        <div class="max-w-6xl mx-auto p-4">
+            <a href="/dashboard" class="font-bold text-xl">
+                EDUviber<span class="text-yellow-600">.</span>
+            </a>
+            <p class="text-sm text-gray-500 mt-1">
+                <%= course.title %>
+            </p>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto p-4 md:p-8">
+        <% 
+            const prev = (typeof prevLesson !== 'undefined' && prevLesson) ? prevLesson : (locals.prevLesson || null);
+            const next = (typeof nextLesson !== 'undefined' && nextLesson) ? nextLesson : (locals.nextLesson || null);
+            const currIndex = (typeof currentIndex !== 'undefined' && currentIndex !== null) ? currentIndex : (locals.currentIndex ?? null);
+            const totalCount = (typeof totalLessonsCount !== 'undefined' && totalLessonsCount !== null) ? totalLessonsCount : (locals.totalLessonsCount ?? null);
+        %>
+
+        <div class="flex items-center justify-between gap-4">
+            <a href="/dashboard" class="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                Back to dashboard
+            </a>
+
+            <!-- Quick Next / Prev Controls -->
+            <div class="flex items-center gap-2">
+                <% if (prev) { %>
+                    <a href="/courses/<%= course._id %>/lessons/<%= prev._id %>/watch" 
+                       class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 text-gray-700 text-xs font-semibold transition-colors shadow-2xs" 
+                       title="Previous: <%= prev.title %>">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                        <span>Prev</span>
+                    </a>
+                <% } %>
+                <% if (next) { %>
+                    <a href="/courses/<%= course._id %>/lessons/<%= next._id %>/watch" 
+                       class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-900 hover:bg-black text-white text-xs font-semibold transition-colors shadow-2xs" 
+                       title="Next: <%= next.title %>">
+                        <span>Next</span>
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                    </a>
+                <% } %>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-3 mt-5">
+            <div>
+                <div class="flex items-center gap-3">
+                    <h1 class="text-2xl md:text-3xl font-bold">
+                        <%= lesson.title %>
+                    </h1>
+                    <span id="completion-badge"
+                        class="<%= isCompleted ? 'inline-flex' : 'hidden' %> items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd"
+                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                clip-rule="evenodd" />
+                        </svg>
+                        Completed
+                    </span>
+                </div>
+                <p class="text-gray-500 mt-1">
+                    <%= lesson.moduleName %>
+                </p>
+            </div>
+            <% if (lastPositionSeconds > 0 && !isCompleted) { %>
+                <div id="resume-banner" class="text-xs text-gray-500 bg-gray-100 px-3 py-1.5 rounded-lg">
+                    Resuming from <%= Math.floor(lastPositionSeconds / 60) %>:<%= String(Math.floor(lastPositionSeconds % 60)).padStart(2, '0') %>
+                </div>
+            <% } %>
+        </div>
+
+        <div class="video-frame shadow-sm mt-5">
+            <iframe id="bunny-player" src="<%= videoUrl %>" title="<%= lesson.title %>"
+                allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowfullscreen loading="eager">
+            </iframe>
+
+            <div class="email-watermark" aria-hidden="true">
+                <%= studentEmail %>
+            </div>
+        </div>
+
+        <% if (next) { %>
+            <!-- Up Next Notification Banner (revealed when video completes) -->
+            <div id="up-next-banner" class="hidden items-center justify-between gap-3 bg-emerald-50 border border-emerald-200 text-emerald-950 p-4 rounded-xl mt-4 transition-all">
+                <div class="flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shrink-0">✓</span>
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-emerald-700">Lesson Completed! Up next:</p>
+                        <p class="text-sm font-bold text-emerald-900"><%= next.title %></p>
+                    </div>
+                </div>
+                <a href="/courses/<%= course._id %>/lessons/<%= next._id %>/watch" 
+                   class="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg shadow-2xs transition-colors shrink-0">
+                    <span>Play Next</span>
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                </a>
+            </div>
+        <% } %>
+
+        <!-- Primary Lesson Navigation Toolbar (Previous & Next Buttons) -->
+        <nav aria-label="Lesson Navigation" class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white border border-gray-200 rounded-2xl p-3.5 sm:p-4 mt-5 shadow-xs">
+            <div class="w-full sm:w-auto">
+                <% if (prev) { %>
+                    <a href="/courses/<%= course._id %>/lessons/<%= prev._id %>/watch" 
+                       id="prev-lesson-btn"
+                       class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-gray-300 bg-white hover:bg-gray-50 text-gray-800 text-sm font-semibold transition-all shadow-xs group"
+                       title="Previous: <%= prev.title %>">
+                        <svg class="w-4 h-4 text-gray-500 group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                        </svg>
+                        <span>Previous Lesson</span>
+                    </a>
+                <% } else { %>
+                    <span id="prev-lesson-btn-disabled"
+                          class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-400 text-sm font-medium cursor-not-allowed">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                        </svg>
+                        <span>Previous Lesson</span>
+                    </span>
+                <% } %>
+            </div>
+
+            <div class="text-xs text-gray-500 text-center font-medium">
+                <% if (currIndex !== null && totalCount !== null) { %>
+                    Lesson <span class="font-bold text-gray-900"><%= currIndex + 1 %></span> of <span class="font-bold text-gray-900"><%= totalCount %></span>
+                <% } %>
+            </div>
+
+            <div class="w-full sm:w-auto flex justify-end">
+                <% if (next) { %>
+                    <a href="/courses/<%= course._id %>/lessons/<%= next._id %>/watch" 
+                       id="next-lesson-btn"
+                       class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gray-900 hover:bg-black text-white text-sm font-semibold transition-all shadow-xs group"
+                       title="Next: <%= next.title %>">
+                        <span>Next Lesson</span>
+                        <svg class="w-4 h-4 text-gray-300 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </a>
+                <% } else { %>
+                    <a href="/dashboard" 
+                       id="finish-course-btn"
+                       class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-all shadow-xs">
+                        <span>Finish Course</span>
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                    </a>
+                <% } %>
+            </div>
+        </nav>
+
+        <section class="bg-white border rounded-xl p-5 mt-6">
+            <h2 class="font-semibold text-lg">About this lesson</h2>
+            <p class="text-gray-600 mt-2 whitespace-pre-line">
+                <%= lesson.description || "Continue your learning with this lesson." %>
+            </p>
+        </section>
+
+        <!-- Bottom Lesson Pagination Navigation -->
+        <div class="flex items-center justify-between gap-4 pt-6 border-t border-gray-200 mt-8">
+            <% if (prev) { %>
+                <a href="/courses/<%= course._id %>/lessons/<%= prev._id %>/watch"
+                   class="group flex items-center gap-3 text-left">
+                    <span class="w-9 h-9 rounded-full border border-gray-200 bg-white flex items-center justify-center text-gray-600 group-hover:border-gray-400 group-hover:bg-gray-50 transition-colors shadow-2xs shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                    </span>
+                    <div>
+                        <span class="block text-xs uppercase font-medium text-gray-400">Previous</span>
+                        <span class="block text-sm font-semibold text-gray-800 group-hover:text-yellow-600 transition-colors line-clamp-1"><%= prev.title %></span>
+                    </div>
+                </a>
+            <% } else { %>
+                <div></div>
+            <% } %>
+
+            <% if (next) { %>
+                <a href="/courses/<%= course._id %>/lessons/<%= next._id %>/watch"
+                   class="group flex items-center gap-3 text-right">
+                    <div>
+                        <span class="block text-xs uppercase font-medium text-gray-400">Next</span>
+                        <span class="block text-sm font-semibold text-gray-800 group-hover:text-yellow-600 transition-colors line-clamp-1"><%= next.title %></span>
+                    </div>
+                    <span class="w-9 h-9 rounded-full bg-gray-900 flex items-center justify-center text-white group-hover:bg-black transition-colors shadow-2xs shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                    </span>
+                </a>
+            <% } else { %>
+                <a href="/dashboard"
+                   class="group flex items-center gap-3 text-right">
+                    <div>
+                        <span class="block text-xs uppercase font-medium text-emerald-600 font-semibold">Course Complete</span>
+                        <span class="block text-sm font-semibold text-gray-800 group-hover:text-emerald-700 transition-colors">Return to Dashboard</span>
+                    </div>
+                    <span class="w-9 h-9 rounded-full bg-emerald-600 flex items-center justify-center text-white group-hover:bg-emerald-700 transition-colors shadow-2xs shrink-0">
+                        ✓
+                    </span>
+                </a>
+            <% } %>
+        </div>
+    </main>
+
+    <script src="https://assets.mediadelivery.net/playerjs/player-0.1.0.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const iframe = document.getElementById("bunny-player");
+            if (!iframe || typeof playerjs === "undefined") {
+                console.warn("Player iframe or Player.js library unavailable.");
+                return;
+            }
+
+            const progressUrl = "/courses/<%= course._id %>/lessons/<%= lesson._id %>/progress";
+            const initialPosition = Number(<%= Number(lastPositionSeconds) || 0 %>);
+            const initiallyCompleted = <%= Boolean(isCompleted) %>;
+
+            let player;
+            try {
+                player = new playerjs.Player(iframe);
+            } catch (e) {
+                console.error("Failed to initialize Player.js:", e);
+                return;
+            }
+
+            let isPlayerReady = false;
+            let hasResumed = false;
+            let isPlaying = false;
+            let hasEnded = initiallyCompleted;
+            let currentPosition = initialPosition;
+            let lastSavedPosition = initialPosition;
+            let lastPeriodicSave = Date.now();
+            let isSaving = false;
+            let pendingSave = null;
+
+            function parseTimeData(data) {
+                if (!data) return { seconds: 0, duration: 0 };
+                if (typeof data === "number") {
+                    return { seconds: data, duration: 0 };
+                }
+                if (typeof data === "string") {
+                    try {
+                        data = JSON.parse(data);
+                    } catch {
+                        const n = Number(data);
+                        return { seconds: Number.isFinite(n) ? n : 0, duration: 0 };
+                    }
+                }
+                if (typeof data === "object") {
+                    const seconds = Number(data.seconds ?? data.currentTime ?? 0);
+                    const duration = Number(data.duration ?? 0);
+                    return {
+                        seconds: Number.isFinite(seconds) ? seconds : 0,
+                        duration: Number.isFinite(duration) ? duration : 0,
+                    };
+                }
+                return { seconds: 0, duration: 0 };
+            }
+
+            function markUiCompleted() {
+                hasEnded = true;
+                const badge = document.getElementById("completion-badge");
+                if (badge) {
+                    badge.classList.remove("hidden");
+                    badge.classList.add("inline-flex");
+                }
+                const resumeBanner = document.getElementById("resume-banner");
+                if (resumeBanner) {
+                    resumeBanner.classList.add("hidden");
+                }
+            }
+
+            function applyResume() {
+                if (hasResumed) return;
+                hasResumed = true;
+
+                if (initiallyCompleted || initialPosition <= 0) {
+                    return;
+                }
+
+                try {
+                    if (typeof player.getDuration === "function") {
+                        player.getDuration(function (duration) {
+                            const dur = Number(duration);
+                            if (Number.isFinite(dur) && dur > 0 && initialPosition >= dur) {
+                                return;
+                            }
+                            seekSafely(initialPosition);
+                        });
+                    } else {
+                        seekSafely(initialPosition);
+                    }
+                } catch (err) {
+                    console.warn("Could not retrieve duration or seek:", err);
+                }
+            }
+
+            function seekSafely(seconds) {
+                try {
+                    if (typeof player.setCurrentTime === "function") {
+                        const res = player.setCurrentTime(seconds);
+                        if (res && typeof res.catch === "function") {
+                            res.catch(function (e) {
+                                console.warn("Seek rejected:", e);
+                            });
+                        }
+                    }
+                } catch (err) {
+                    console.warn("Failed to seek:", err);
+                }
+            }
+
+            const csrfToken = "<%= locals.csrfToken || '' %>";
+
+            async function sendProgress(completed) {
+                const targetPos = completed ? 0 : Math.floor(currentPosition);
+
+                // Avoid sending identical saves when position hasn't changed meaningfully
+                if (!completed && Math.abs(targetPos - lastSavedPosition) < 1) {
+                    return;
+                }
+
+                if (isSaving) {
+                    pendingSave = { completed };
+                    return;
+                }
+
+                isSaving = true;
+                lastPeriodicSave = Date.now();
+
+                try {
+                    const response = await fetch(progressUrl, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "x-csrf-token": csrfToken,
+                        },
+                        body: JSON.stringify({
+                            position: targetPos,
+                            completed: Boolean(completed),
+                            _csrf: csrfToken,
+                        }),
+                    });
+
+                    if (response.ok) {
+                        lastSavedPosition = targetPos;
+                        if (completed) {
+                            markUiCompleted();
+                        }
+                    }
+                } catch (err) {
+                    console.warn("Progress save failed:", err);
+                } finally {
+                    isSaving = false;
+                    if (pendingSave) {
+                        const next = pendingSave;
+                        pendingSave = null;
+                        sendProgress(next.completed);
+                    }
+                }
+            }
+
+            player.on("ready", function () {
+                isPlayerReady = true;
+                applyResume();
+            });
+
+            player.on("play", function () {
+                isPlaying = true;
+                if (!hasResumed) {
+                    applyResume();
+                }
+            });
+
+            player.on("pause", function () {
+                isPlaying = false;
+                if (!hasEnded && Math.abs(currentPosition - lastSavedPosition) >= 1) {
+                    sendProgress(false);
+                }
+            });
+
+            player.on("timeupdate", function (data) {
+                const timeData = parseTimeData(data);
+                if (timeData.seconds >= 0) {
+                    currentPosition = timeData.seconds;
+                }
+
+                const now = Date.now();
+                // Periodic save every ~10 seconds while playing
+                if (
+                    isPlaying &&
+                    !hasEnded &&
+                    now - lastPeriodicSave >= 10000 &&
+                    Math.abs(currentPosition - lastSavedPosition) >= 2
+                ) {
+                    sendProgress(false);
+                }
+            });
+
+            player.on("ended", function () {
+                isPlaying = false;
+                hasEnded = true;
+                markUiCompleted();
+                sendProgress(true);
+                const upNext = document.getElementById("up-next-banner");
+                if (upNext) {
+                    upNext.classList.remove("hidden");
+                    upNext.classList.add("flex");
+                }
+            });
+
+            player.on("error", function (err) {
+                console.warn("Bunny Player error:", err);
+            });
+
+            window.addEventListener("pagehide", function () {
+                if (!hasEnded && currentPosition > 0 && Math.abs(currentPosition - lastSavedPosition) >= 1) {
+                    try {
+                        fetch(progressUrl, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "x-csrf-token": csrfToken,
+                            },
+                            body: JSON.stringify({
+                                position: Math.floor(currentPosition),
+                                completed: false,
+                                _csrf: csrfToken,
+                            }),
+                            keepalive: true,
+                        });
+                    } catch (_) {}
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

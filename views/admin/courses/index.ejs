@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Manage Courses</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50 text-gray-900">
+    <main class="max-w-6xl mx-auto p-5 md:p-10">
+        <a href="/admin" class="text-sm text-gray-500 hover:text-gray-900">← Dashboard</a>
+
+        <header class="flex flex-wrap justify-between items-center gap-4 mt-5 mb-8">
+            <div>
+                <h1 class="text-3xl font-bold">Courses</h1>
+                <p class="text-gray-500 mt-2">Create and manage your video courses.</p>
+            </div>
+            <a href="/admin/courses/new" class="bg-gray-900 text-white px-5 py-3 rounded-lg">+ Create Course</a>
+        </header>
+
+        <section class="bg-white border rounded-xl overflow-hidden">
+            <% if (courses.length===0) { %>
+                <div class="p-12 text-center">
+                    <h2 class="text-xl font-semibold">No courses created</h2>
+                    <p class="text-gray-500 mt-2">Your new courses will appear here.</p>
+                    <a href="/admin/courses/new" class="inline-block mt-5 bg-gray-900 text-white px-5 py-3 rounded-lg">
+                        Create first course
+                    </a>
+                </div>
+                <% } else { %>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-gray-50 text-gray-500">
+                                <tr>
+                                    <th class="p-4">Course</th>
+                                    <th class="p-4">Price</th>
+                                    <th class="p-4">Lessons</th>
+                                    <th class="p-4">Status</th>
+                                    <th class="p-4">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y">
+                                <% courses.forEach(course=> { %>
+                                    <tr>
+                                        <td class="p-4 min-w-48">
+                                            <p class="font-medium">
+                                                <%= course.title %>
+                                            </p>
+                                            <p class="text-xs text-gray-500 mt-1">
+                                                <%= course.slug %>
+                                            </p>
+                                        </td>
+                                        <td class="p-4">₹<%= course.price.toLocaleString("en-IN") %>
+                                        </td>
+                                        <td class="p-4">
+                                            <%= course.lessonCount %>
+                                        </td>
+                                        <td class="p-4">
+                                            <span
+                                                class="rounded-full px-3 py-1 text-xs <%= course.isPublished ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-800' %>">
+                                                <%= course.isPublished ? "Published" : "Draft" %>
+                                            </span>
+                                        </td>
+                                        <td class="p-4">
+                                            <div class="flex items-center gap-3">
+                                                <a href="/admin/courses/<%= course._id %>/lessons"
+                                                    class="font-medium text-blue-700 hover:underline">
+                                                    Lessons
+                                                </a>
+                                                <span class="text-gray-300">|</span>
+                                                <a href="/admin/courses/<%= course._id %>/edit"
+                                                    class="font-medium text-gray-700 hover:text-black hover:underline">
+                                                    Edit
+                                                </a>
+                                                <span class="text-gray-300">|</span>
+                                                <form action="/admin/courses/<%= course._id %>/toggle-publication"
+                                                    method="POST" class="inline">
+                                                    <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>">
+                                                    <button class="font-medium text-yellow-700 hover:underline">
+                                                        <%= course.isPublished ? "Unpublish" : "Publish" %>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                    <% } %>
+        </section>
+    </main>
+</body>
+
+</html>

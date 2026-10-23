@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Add Student | Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50 text-gray-900">
+    <main class="max-w-2xl mx-auto p-5 md:p-10">
+        <a href="/admin/students" class="text-sm text-gray-500 hover:text-gray-900">
+            ← Back to students
+        </a>
+
+        <h1 class="text-3xl font-bold mt-5">Add New Student</h1>
+        <p class="text-gray-500 mt-2 mb-8">
+            Create a student account. The student will be prompted to set their own permanent password upon their initial sign in.
+        </p>
+
+        <% if (error) { %>
+            <div role="alert" class="mb-6 rounded-lg bg-red-50 text-red-700 p-4 text-sm border border-red-200">
+                <%= error %>
+            </div>
+        <% } %>
+
+        <form action="/admin/students" method="POST" class="bg-white border border-gray-200 rounded-xl p-6 md:p-8 space-y-5 shadow-xs">
+            <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>">
+            <div>
+                <label for="name" class="block font-medium text-sm mb-2">Student Full Name *</label>
+                <input id="name" name="name" type="text" required maxlength="100"
+                    value="<%= values.name || '' %>" placeholder="e.g. Rahul Sharma"
+                    class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-yellow-500 outline-hidden">
+            </div>
+
+            <div>
+                <label for="email" class="block font-medium text-sm mb-2">Email Address *</label>
+                <input id="email" name="email" type="email" required autocomplete="username"
+                    value="<%= values.email || '' %>" placeholder="student@example.com"
+                    class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-yellow-500 outline-hidden">
+                <p class="text-xs text-gray-500 mt-1.5">
+                    This will be the student's login username.
+                </p>
+            </div>
+
+            <div>
+                <label for="phone" class="block font-medium text-sm mb-2">Phone Number *</label>
+                <input id="phone" name="phone" type="tel" required maxlength="20"
+                    value="<%= values.phone || '' %>" placeholder="+91 9876543210"
+                    class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-yellow-500 outline-hidden">
+                <p class="text-xs text-gray-500 mt-1.5">
+                    Used for student record verification and direct support.
+                </p>
+            </div>
+
+            <div>
+                <label for="password" class="block font-medium text-sm mb-2">Initial Temporary Password *</label>
+                <input id="password" name="password" type="text" required minlength="8"
+                    placeholder="Enter at least 8 characters (e.g. EDUviber@2026Temp)"
+                    class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-yellow-500 outline-hidden font-mono">
+                <p class="text-xs text-gray-500 mt-1.5">
+                    Provide this temporary password securely to the student. The system enforces a mandatory password change on their first login.
+                </p>
+            </div>
+
+            <div class="pt-2">
+                <label class="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" name="isActive" value="true" checked
+                        class="w-4 h-4 text-yellow-600 rounded border-gray-300 focus:ring-yellow-500">
+                    <span class="text-sm font-medium text-gray-800">Account Active (Permit login)</span>
+                </label>
+            </div>
+
+            <div class="bg-yellow-50 text-yellow-900 border border-yellow-200 rounded-lg p-4 text-xs leading-relaxed">
+                <strong>Security Policy:</strong> Accounts created here have <code>mustChangePassword: true</code> set automatically. When the student signs in with their temporary credentials, they will be redirected to choose a confidential, 12+ character password before accessing any course videos.
+            </div>
+
+            <div class="flex flex-wrap gap-3 pt-3">
+                <button type="submit" class="bg-gray-900 hover:bg-black text-white px-6 py-3 rounded-lg font-medium text-sm transition-colors shadow-xs">
+                    Create Student Account
+                </button>
+                <a href="/admin/students" class="border border-gray-300 hover:bg-gray-50 px-6 py-3 rounded-lg font-medium text-sm transition-colors text-gray-700">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </main>
+</body>
+
+</html>

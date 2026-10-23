@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>EDUviber — Master Practical Digital Skills</title>
+    <meta name="description" content="Premium, industry-grade digital video courses with practical step-by-step guidance, lifetime access, and progress tracking.">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col antialiased">
+    <!-- Navigation Bar -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-xs">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+            <a href="/" class="font-bold text-2xl tracking-tight text-gray-900 flex items-center gap-1">
+                EDUviber<span class="text-yellow-600">.</span>
+            </a>
+
+            <nav class="flex items-center gap-4 sm:gap-6">
+                <a href="/courses" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
+                    All Courses
+                </a>
+
+                <% if (user) { %>
+                    <a href="<%= user.role === 'admin' ? '/admin' : '/dashboard' %>"
+                        class="inline-flex items-center gap-2 bg-gray-900 hover:bg-black text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors shadow-xs">
+                        <span>Dashboard</span>
+                        <span class="text-xs text-yellow-400">→</span>
+                    </a>
+                <% } else { %>
+                    <a href="/login"
+                        class="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors">
+                        Sign In
+                    </a>
+                    <a href="/courses"
+                        class="bg-gray-900 hover:bg-black text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors shadow-xs">
+                        Get Started
+                    </a>
+                <% } %>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-1">
+        <!-- Hero Section -->
+        <section class="relative bg-white border-b border-gray-200 overflow-hidden py-16 sm:py-24">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 text-center">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-yellow-50 text-yellow-800 border border-yellow-200 mb-6">
+                    <span class="w-2 h-2 rounded-full bg-yellow-500"></span>
+                    Practical, High-Impact Digital Courses
+                </div>
+
+                <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-gray-900 max-w-4xl mx-auto leading-tight">
+                    Build Real-World Skills with <span class="text-yellow-600">Actionable Lessons</span>
+                </h1>
+
+                <p class="mt-6 text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+                    High-definition video courses structured into step-by-step modules. Learn at your own pace with encrypted playback and progress tracking.
+                </p>
+
+                <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <a href="/courses"
+                        class="w-full sm:w-auto bg-gray-900 hover:bg-black text-white font-medium text-base px-8 py-3.5 rounded-xl transition-colors shadow-sm">
+                        Explore Courses
+                    </a>
+                    <% if (!user) { %>
+                        <a href="/login"
+                            class="w-full sm:w-auto border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium text-base px-8 py-3.5 rounded-xl transition-colors">
+                            Sign In to Account
+                        </a>
+                    <% } %>
+                </div>
+
+                <!-- Trust Points -->
+                <div class="mt-12 pt-8 border-t border-gray-100 grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-3xl mx-auto text-center">
+                    <div>
+                        <p class="text-2xl font-bold text-gray-900">100%</p>
+                        <p class="text-xs text-gray-500 mt-1">Structured Curriculum</p>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-gray-900">HD Video</p>
+                        <p class="text-xs text-gray-500 mt-1">Buffer-Free CDN Streaming</p>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-gray-900">Auto-Resume</p>
+                        <p class="text-xs text-gray-500 mt-1">Seamless Progress Tracking</p>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-gray-900">Lifetime</p>
+                        <p class="text-xs text-gray-500 mt-1">Continuous Access</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Course Discovery Section -->
+        <section class="max-w-6xl mx-auto px-4 sm:px-6 py-16">
+            <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-4">
+                <div>
+                    <h2 class="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">
+                        Featured Courses
+                    </h2>
+                    <p class="text-gray-500 mt-1 text-sm sm:text-base">
+                        Explore published training programs ready for immediate enrollment.
+                    </p>
+                </div>
+                <a href="/courses" class="text-sm font-semibold text-yellow-700 hover:text-yellow-800 transition-colors">
+                    View full catalogue →
+                </a>
+            </div>
+
+            <% if (courses.length === 0) { %>
+                <div class="bg-white border border-gray-200 rounded-2xl p-12 text-center max-w-md mx-auto shadow-xs">
+                    <div class="w-12 h-12 bg-yellow-50 text-yellow-600 rounded-xl flex items-center justify-center mx-auto mb-3">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900">New Courses Coming Soon</h3>
+                    <p class="text-sm text-gray-500 mt-1">Our team is preparing high-grade video content. Check back shortly!</p>
+                </div>
+            <% } else { %>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <% courses.forEach(course => { %>
+                        <article class="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-xs hover:border-gray-300 hover:shadow-md transition-all flex flex-col justify-between">
+                            <!-- Course Thumbnail / Banner -->
+                            <div class="relative w-full h-48 bg-gradient-to-br from-gray-900 via-gray-800 to-yellow-950 overflow-hidden">
+                                <% if (course.thumbnail) { %>
+                                    <img src="<%= course.thumbnail %>" alt="<%= course.title %>"
+                                        class="w-full h-full object-cover"
+                                        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div class="hidden w-full h-full items-center justify-center p-6 text-white text-center">
+                                        <p class="text-lg font-bold"><%= course.title %></p>
+                                    </div>
+                                <% } else { %>
+                                    <div class="w-full h-full flex flex-col items-center justify-center p-6 text-white text-center">
+                                        <span class="text-2xl font-extrabold text-yellow-500">EDUviber.</span>
+                                        <p class="text-base font-semibold mt-1 px-4 line-clamp-2"><%= course.title %></p>
+                                    </div>
+                                <% } %>
+
+                                <div class="absolute bottom-3 right-3 bg-black/75 backdrop-blur-xs text-white text-xs px-2.5 py-1 rounded-md font-medium">
+                                    <%= course.lessonCount %> <%= course.lessonCount === 1 ? 'lesson' : 'lessons' %>
+                                    <% if (course.totalMinutes > 0) { %> • <%= course.totalMinutes %>m<% } %>
+                                </div>
+                            </div>
+
+                            <!-- Course Info -->
+                            <div class="p-6 flex-1 flex flex-col justify-between">
+                                <div>
+                                    <% if (course.instructor) { %>
+                                        <p class="text-xs font-medium text-yellow-700 uppercase tracking-wider mb-1">
+                                            <%= course.instructor %>
+                                        </p>
+                                    <% } %>
+
+                                    <h3 class="text-lg font-bold text-gray-900 leading-snug">
+                                        <a href="/courses/<%= course.slug %>" class="hover:underline">
+                                            <%= course.title %>
+                                        </a>
+                                    </h3>
+
+                                    <p class="text-sm text-gray-600 mt-2 line-clamp-2 leading-relaxed">
+                                        <%= course.description %>
+                                    </p>
+                                </div>
+
+                                <div class="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between">
+                                    <div>
+                                        <span class="text-xs text-gray-400 block font-medium">Total Investment</span>
+                                        <span class="text-xl font-bold text-gray-900">
+                                            ₹<%= course.price.toLocaleString("en-IN") %>
+                                        </span>
+                                    </div>
+
+                                    <a href="/courses/<%= course.slug %>"
+                                        class="bg-gray-900 hover:bg-black text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors">
+                                        View Syllabus →
+                                    </a>
+                                </div>
+                            </div>
+                        </article>
+                    <% }) %>
+                </div>
+            <% } %>
+        </section>
+
+        <!-- Platform Benefits Section -->
+        <section class="bg-gray-100 border-t border-b border-gray-200 py-16">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6">
+                <div class="text-center max-w-2xl mx-auto mb-12">
+                    <h2 class="text-3xl font-bold text-gray-900 tracking-tight">Why Choose EDUviber?</h2>
+                    <p class="text-gray-600 mt-2 text-sm sm:text-base">
+                        Engineered to provide a distraction-free, reliable educational experience.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
+                        <div class="w-10 h-10 rounded-xl bg-yellow-100 text-yellow-800 flex items-center justify-center font-bold text-lg mb-4">
+                            ⚡
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-900">Zero Buffer Streaming</h3>
+                        <p class="text-sm text-gray-600 mt-2 leading-relaxed">
+                            Video delivered via Bunny.net high-speed CDN edge nodes with adaptive bitrate streaming for crystal clear quality on mobile and desktop.
+                        </p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-lg mb-4">
+                            🎯
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-900">Smart Resume Tracking</h3>
+                        <p class="text-sm text-gray-600 mt-2 leading-relaxed">
+                            Pick up right where you stopped. Playback position syncs automatically every 10 seconds and on pause so you never lose your spot.
+                        </p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
+                        <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-800 flex items-center justify-center font-bold text-lg mb-4">
+                            🔒
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-900">Secure Student Portal</h3>
+                        <p class="text-sm text-gray-600 mt-2 leading-relaxed">
+                            Dedicated student dashboard with module progression meters, completion badges, and single-click access to subsequent lessons.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Final CTA Banner -->
+        <section class="max-w-6xl mx-auto px-4 sm:px-6 py-16 text-center">
+            <div class="bg-gray-900 text-white rounded-3xl p-8 sm:p-12 shadow-sm">
+                <h2 class="text-3xl font-bold tracking-tight">Ready to level up your expertise?</h2>
+                <p class="text-gray-300 mt-3 max-w-xl mx-auto text-sm sm:text-base">
+                    Browse the course curriculum, verify the syllabus, and start your journey today.
+                </p>
+                <div class="mt-8 flex justify-center gap-4">
+                    <a href="/courses"
+                        class="bg-yellow-500 hover:bg-yellow-400 text-gray-950 font-bold px-8 py-3.5 rounded-xl transition-colors shadow-sm">
+                        Browse All Courses
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 py-8">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-500">
+            <p>© <%= new Date().getFullYear() %> EDUviber. All rights reserved.</p>
+            <div class="flex items-center gap-6">
+                <a href="/courses" class="hover:text-gray-900 transition-colors">Courses</a>
+                <a href="/login" class="hover:text-gray-900 transition-colors">Sign In</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

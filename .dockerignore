@@ -1,0 +1,10 @@
+node_modules
+.env
+.env.*
+!.env.example
+.git
+.gitignore
+.DS_Store
+npm-debug.log*
+scripts/test*.js
+README.md

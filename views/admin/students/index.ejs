@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Manage Students | Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50 text-gray-900">
+    <div class="min-h-screen md:flex">
+        <!-- Sidebar -->
+        <aside class="bg-white border-r border-gray-200 p-6 md:w-64 shrink-0">
+            <a href="/admin" class="text-2xl font-bold">
+                EDUviber<span class="text-yellow-600">.</span>
+            </a>
+            <p class="text-xs text-gray-500 mt-2">ADMINISTRATION</p>
+
+            <nav class="mt-8 space-y-2">
+                <a href="/admin" class="block rounded-lg px-4 py-3 hover:bg-gray-100">Dashboard</a>
+                <a href="/admin/courses" class="block rounded-lg px-4 py-3 hover:bg-gray-100">Courses</a>
+                <a href="/admin/students" class="block bg-gray-900 text-white rounded-lg px-4 py-3">Students</a>
+                <a href="/admin/enrollments" class="block rounded-lg px-4 py-3 hover:bg-gray-100">Enrollments</a>
+                <a href="/admin/courses/new" class="block rounded-lg px-4 py-3 hover:bg-gray-100">Create Course</a>
+            </nav>
+
+            <form action="/logout" method="POST" class="mt-8">
+                <button class="text-sm text-gray-600 hover:text-red-600">Log out</button>
+            </form>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-5 md:p-10">
+            <header class="flex flex-wrap items-center justify-between gap-4 mb-8">
+                <div>
+                    <h1 class="text-3xl font-bold">Students Directory</h1>
+                    <p class="text-gray-500 mt-1">
+                        View registered students, their account status, and course enrollments.
+                    </p>
+                </div>
+                <a href="/admin/students/new" class="rounded-lg bg-gray-900 text-white px-5 py-3 font-medium hover:bg-black transition-colors">
+                    + Add Student
+                </a>
+            </header>
+
+            <!-- Search and Filter Bar -->
+            <section class="bg-white border border-gray-200 rounded-xl p-4 mb-6 shadow-xs">
+                <form method="GET" action="/admin/students" class="flex flex-col sm:flex-row gap-3">
+                    <div class="relative flex-1">
+                        <input type="text" name="search" value="<%= search %>"
+                            placeholder="Search by student name, email, or phone..."
+                            class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-yellow-500 outline-hidden">
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="submit"
+                            class="bg-gray-900 hover:bg-black text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors">
+                            Search
+                        </button>
+                        <% if (search) { %>
+                            <a href="/admin/students"
+                                class="border border-gray-300 hover:bg-gray-100 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
+                                Clear
+                            </a>
+                        <% } %>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Students Table -->
+            <section class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-xs">
+                <% if (students.length === 0) { %>
+                    <div class="p-12 text-center">
+                        <h2 class="text-xl font-semibold text-gray-900">No students found</h2>
+                        <p class="text-gray-500 mt-2 text-sm">
+                            <%= search ? 'No student records match your search criteria.' : 'No student accounts exist yet.' %>
+                        </p>
+                        <% if (search) { %>
+                            <a href="/admin/students" class="inline-block mt-4 text-sm font-medium text-yellow-700 hover:underline">
+                                Reset search filters
+                            </a>
+                        <% } else { %>
+                            <a href="/admin/students/new" class="inline-block mt-5 bg-gray-900 text-white px-5 py-2.5 rounded-lg text-sm font-medium">
+                                Create first student
+                            </a>
+                        <% } %>
+                    </div>
+                <% } else { %>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-gray-50 text-gray-500 border-b border-gray-200">
+                                <tr>
+                                    <th class="p-4 font-semibold">Student</th>
+                                    <th class="p-4 font-semibold">Phone</th>
+                                    <th class="p-4 font-semibold">Status</th>
+                                    <th class="p-4 font-semibold">Enrollments</th>
+                                    <th class="p-4 font-semibold">Joined</th>
+                                    <th class="p-4 font-semibold">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <% students.forEach(student => { %>
+                                    <tr class="hover:bg-gray-50/50 transition-colors">
+                                        <td class="p-4 min-w-48">
+                                            <a href="/admin/students/<%= student._id %>" class="font-medium text-gray-900 hover:underline">
+                                                <%= student.name %>
+                                            </a>
+                                            <p class="text-xs text-gray-500 mt-0.5">
+                                                <%= student.email %>
+                                            </p>
+                                        </td>
+                                        <td class="p-4 font-mono text-xs text-gray-600">
+                                            <%= student.phone || "—" %>
+                                        </td>
+                                        <td class="p-4">
+                                            <% if (student.isActive) { %>
+                                                <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-green-100 text-green-800">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                                    Active
+                                                </span>
+                                            <% } else { %>
+                                                <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-gray-100 text-gray-700">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                                                    Inactive
+                                                </span>
+                                            <% } %>
+                                            <% if (student.mustChangePassword) { %>
+                                                <span class="block text-[10px] text-amber-700 mt-1 font-medium">
+                                                    Password reset pending
+                                                </span>
+                                            <% } %>
+                                        </td>
+                                        <td class="p-4">
+                                            <span class="inline-flex items-center justify-center font-semibold text-xs px-2.5 py-1 rounded-lg bg-gray-100 text-gray-800">
+                                                <%= student.enrollmentCount %> <%= student.enrollmentCount === 1 ? 'course' : 'courses' %>
+                                            </span>
+                                        </td>
+                                        <td class="p-4 text-xs text-gray-500">
+                                            <%= new Date(student.createdAt).toLocaleDateString() %>
+                                        </td>
+                                        <td class="p-4">
+                                            <a href="/admin/students/<%= student._id %>"
+                                                class="font-medium text-yellow-700 hover:underline text-xs">
+                                                View & Enroll →
+                                            </a>
+                                        </td>
+                                    </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <% if (totalPages > 1) { %>
+                        <div class="p-4 border-t border-gray-200 flex items-center justify-between text-xs text-gray-500">
+                            <div>
+                                Page <%= page %> of <%= totalPages %> (<%= totalCount %> total students)
+                            </div>
+                            <div class="flex gap-2">
+                                <% if (page > 1) { %>
+                                    <a href="/admin/students?page=<%= page - 1 %><%= search ? '&search=' + encodeURIComponent(search) : '' %>"
+                                        class="px-3 py-1.5 border rounded-lg hover:bg-gray-50 text-gray-700 font-medium">
+                                        ← Previous
+                                    </a>
+                                <% } %>
+                                <% if (page < totalPages) { %>
+                                    <a href="/admin/students?page=<%= page + 1 %><%= search ? '&search=' + encodeURIComponent(search) : '' %>"
+                                        class="px-3 py-1.5 border rounded-lg hover:bg-gray-50 text-gray-700 font-medium">
+                                        Next →
+                                    </a>
+                                <% } %>
+                            </div>
+                        </div>
+                    <% } %>
+                <% } %>
+            </section>
+        </main>
+    </div>
+</body>
+
+</html>

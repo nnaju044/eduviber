@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Page Not Found | EDUviber</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col antialiased">
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+            <a href="/" class="font-bold text-2xl tracking-tight text-gray-900 flex items-center gap-1">
+                EDUviber<span class="text-yellow-600">.</span>
+            </a>
+
+            <nav class="flex items-center gap-4">
+                <a href="/courses" class="text-sm font-medium text-gray-600 hover:text-gray-900">
+                    All Courses
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-1 flex items-center justify-center p-4">
+        <div class="w-full max-w-md bg-white border border-gray-200 rounded-3xl p-8 sm:p-10 shadow-xs text-center space-y-5">
+            <span class="text-5xl font-black text-gray-300">404</span>
+
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">
+                    <%= typeof message !== 'undefined' ? message : 'Course Not Found' %>
+                </h1>
+                <p class="text-sm text-gray-500 mt-2">
+                    The requested course or page does not exist or may currently be unpublished.
+                </p>
+            </div>
+
+            <div class="pt-2">
+                <a href="/courses"
+                    class="inline-block bg-gray-900 hover:bg-black text-white font-medium px-6 py-3 rounded-xl transition-colors shadow-xs text-sm">
+                    Browse Available Courses →
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 py-6">
+        <div class="max-w-6xl mx-auto px-4 text-center text-xs text-gray-500">
+            <p>© <%= new Date().getFullYear() %> EDUviber. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+
+</html>

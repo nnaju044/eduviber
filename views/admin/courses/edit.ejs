@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Edit Course | <%= course.title %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50 text-gray-900">
+    <main class="max-w-3xl mx-auto p-5 md:p-10">
+        <a href="/admin/courses" class="text-sm text-gray-500 hover:text-gray-900">← Back to courses</a>
+
+        <div class="flex flex-wrap items-center justify-between gap-4 mt-5 mb-8">
+            <div>
+                <h1 class="text-3xl font-bold">Edit Course</h1>
+                <p class="text-gray-500 mt-1">Update course metadata, pricing, and publication status.</p>
+            </div>
+            <a href="/admin/courses/<%= course._id %>/lessons"
+                class="inline-block bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 px-4 py-2 rounded-lg text-sm font-medium transition">
+                Manage Lessons (<%= lessonCount %>) &rarr;
+            </a>
+        </div>
+
+        <% if (error) { %>
+            <div role="alert" class="mb-6 rounded-lg bg-red-50 text-red-700 p-4 border border-red-200 text-sm">
+                <%= error %>
+            </div>
+        <% } %>
+
+        <form action="/admin/courses/<%= course._id %>" method="POST" class="bg-white border rounded-xl p-6 md:p-8 space-y-6 shadow-sm">
+            <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>">
+
+            <div>
+                <label for="title" class="block font-medium text-sm mb-2">Course title *</label>
+                <input id="title" name="title" required maxlength="150" value="<%= values.title || '' %>"
+                    class="w-full border rounded-lg p-3 focus:ring-2 focus:ring-yellow-500 outline-none"
+                    placeholder="e.g. Digital Marketing for Teachers">
+            </div>
+
+            <div>
+                <label for="slug" class="block font-medium text-sm mb-2">URL Slug</label>
+                <div class="flex items-center">
+                    <span class="text-gray-400 text-sm px-3 py-3 bg-gray-50 border border-r-0 rounded-l-lg select-none">/courses/</span>
+                    <input id="slug" name="slug" maxlength="150" value="<%= values.slug || '' %>"
+                        class="w-full border rounded-r-lg p-3 focus:ring-2 focus:ring-yellow-500 outline-none font-mono text-sm"
+                        placeholder="digital-marketing-teachers">
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Leave as-is or provide a custom slug. Slug must be unique.</p>
+            </div>
+
+            <div>
+                <label for="description" class="block font-medium text-sm mb-2">Description *</label>
+                <textarea id="description" name="description" required rows="5" maxlength="10000"
+                    class="w-full border rounded-lg p-3 focus:ring-2 focus:ring-yellow-500 outline-none"
+                    placeholder="What will students learn?"><%= values.description || '' %></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                    <label for="price" class="block font-medium text-sm mb-2">Course price (INR) *</label>
+                    <input id="price" name="price" type="number" min="0" max="10000000" step="0.01" required
+                        value="<%= values.price !== undefined ? values.price : '' %>"
+                        class="w-full border rounded-lg p-3 focus:ring-2 focus:ring-yellow-500 outline-none" placeholder="999">
+                </div>
+
+                <div>
+                    <label for="instructor" class="block font-medium text-sm mb-2">Instructor</label>
+                    <input id="instructor" name="instructor" maxlength="150" value="<%= values.instructor || '' %>"
+                        class="w-full border rounded-lg p-3 focus:ring-2 focus:ring-yellow-500 outline-none" placeholder="Instructor name">
+                </div>
+            </div>
+
+            <div>
+                <label for="thumbnail" class="block font-medium text-sm mb-2">Thumbnail image URL</label>
+                <input id="thumbnail" name="thumbnail" type="url" maxlength="2048"
+                    value="<%= values.thumbnail || '' %>" class="w-full border rounded-lg p-3 focus:ring-2 focus:ring-yellow-500 outline-none"
+                    placeholder="https://example.com/course-thumbnail.jpg">
+            </div>
+
+            <div class="border-t pt-5">
+                <label class="block font-medium text-sm mb-2">Publication State</label>
+                <div class="flex items-center gap-3">
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="isPublished" value="true" class="sr-only peer" <%= values.isPublished ? 'checked' : '' %>>
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                        <span class="ml-3 text-sm font-medium text-gray-700">
+                            <%= values.isPublished ? 'Published (visible to students)' : 'Draft (hidden from public catalogue)' %>
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-3 pt-3">
+                <button type="submit" class="bg-gray-900 text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-800 transition">
+                    Save Changes
+                </button>
+                <a href="/admin/courses" class="border px-6 py-3 rounded-lg font-medium hover:bg-gray-50 transition">
+                    Cancel
+                </a>
+            </div>
+        </form>
+
+        <!-- Danger Zone: Course Deletion -->
+        <section class="mt-10 bg-white border border-red-200 rounded-xl p-6 md:p-8">
+            <h2 class="text-lg font-bold text-red-900">Danger Zone</h2>
+            <p class="text-sm text-gray-600 mt-1 mb-4">
+                Permanently delete this course and manage related dependencies.
+            </p>
+
+            <% if (hasDependencies) { %>
+                <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-900 mb-4">
+                    <p class="font-semibold">Deletion is disabled to preserve student and financial records:</p>
+                    <ul class="list-disc list-inside mt-2 space-y-1 text-xs">
+                        <% if (paymentCount > 0) { %>
+                            <li><strong><%= paymentCount %></strong> financial payment record(s) exist for this course.</li>
+                        <% } %>
+                        <% if (enrollmentCount > 0) { %>
+                            <li><strong><%= enrollmentCount %></strong> student enrollment(s) are active for this course.</li>
+                        <% } %>
+                    </ul>
+                    <p class="mt-2 text-xs">
+                        To remove this course from public discovery while preserving student access and financial history, toggle its status to <strong>Draft (Unpublish)</strong> above.
+                    </p>
+                </div>
+            <% } else { %>
+                <div class="bg-red-50 border border-red-100 rounded-lg p-4 text-sm text-red-800 mb-4">
+                    <p>
+                        This course has no student enrollments or financial transactions. Deleting it will permanently remove the course and its <strong><%= lessonCount %></strong> attached lesson(s).
+                    </p>
+                </div>
+
+                <form action="/admin/courses/<%= course._id %>/delete" method="POST"
+                    onsubmit="return confirm('Are you absolutely sure you want to permanently delete this course? This cannot be undone.');"
+                    class="space-y-4">
+                    <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>">
+                    <div>
+                        <label for="confirmTitle" class="block text-xs font-medium text-gray-700 mb-1">
+                            Type the exact course title <code class="bg-gray-100 px-1 py-0.5 rounded text-red-700 font-bold"><%= course.title %></code> to confirm deletion:
+                        </label>
+                        <input id="confirmTitle" name="confirmTitle" required
+                            class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-red-500"
+                            placeholder="<%= course.title %>">
+                    </div>
+                    <button type="submit" class="bg-red-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-red-700 transition">
+                        Permanently Delete Course
+                    </button>
+                </form>
+            <% } %>
+        </section>
+    </main>
+</body>
+
+</html>

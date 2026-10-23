@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Payment Verification | Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50 text-gray-900">
+    <div class="min-h-screen md:flex">
+        <!-- Sidebar -->
+        <aside class="bg-white border-r border-gray-200 p-6 md:w-64 shrink-0">
+            <a href="/admin" class="text-2xl font-bold">
+                EDUviber<span class="text-yellow-600">.</span>
+            </a>
+            <p class="text-xs text-gray-500 mt-2">ADMINISTRATION</p>
+
+            <nav class="mt-8 space-y-2">
+                <a href="/admin" class="block rounded-lg px-4 py-3 hover:bg-gray-100">Dashboard</a>
+                <a href="/admin/courses" class="block rounded-lg px-4 py-3 hover:bg-gray-100">Courses</a>
+                <a href="/admin/students" class="block rounded-lg px-4 py-3 hover:bg-gray-100">Students</a>
+                <a href="/admin/enrollments" class="block rounded-lg px-4 py-3 hover:bg-gray-100">Enrollments</a>
+                <a href="/admin/payments" class="block bg-gray-900 text-white rounded-lg px-4 py-3">Payments</a>
+                <a href="/admin/courses/new" class="block rounded-lg px-4 py-3 hover:bg-gray-100">Create Course</a>
+            </nav>
+
+            <form action="/logout" method="POST" class="mt-8">
+                <button class="text-sm text-gray-600 hover:text-red-600">Log out</button>
+            </form>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-5 md:p-10 space-y-8">
+            <header class="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold">Payment Verifications</h1>
+                    <p class="text-gray-500 mt-1">
+                        Review offline UPI and bank transfer submissions. Approving a payment automatically grants course access to the student.
+                    </p>
+                </div>
+            </header>
+
+            <!-- Status Filter Tabs -->
+            <section class="flex flex-wrap gap-2 border-b border-gray-200 pb-3 text-sm">
+                <% const tabs = [
+                    { id: 'pending', label: 'Pending Review', count: counts.pending },
+                    { id: 'approved', label: 'Approved', count: counts.approved },
+                    { id: 'rejected', label: 'Rejected', count: counts.rejected },
+                    { id: 'all', label: 'All Transactions', count: counts.all }
+                ]; %>
+                <% tabs.forEach(tab => { %>
+                    <a href="/admin/payments?status=<%= tab.id %>"
+                        class="px-4 py-2 rounded-lg font-medium text-xs flex items-center gap-2 transition-colors <%= currentStatus === tab.id ? 'bg-gray-900 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50' %>">
+                        <span><%= tab.label %></span>
+                        <span class="rounded-full px-2 py-0.5 text-[10px] font-bold <%= currentStatus === tab.id ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-700' %>">
+                            <%= tab.count %>
+                        </span>
+                    </a>
+                <% }) %>
+            </section>
+
+            <!-- Payments Table -->
+            <section class="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-xs">
+                <% if (payments.length === 0) { %>
+                    <div class="p-12 text-center">
+                        <div class="w-12 h-12 bg-gray-100 text-gray-400 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-900">No payment records found</h3>
+                        <p class="text-xs text-gray-500 mt-1">
+                            <%= currentStatus === 'pending' ? 'No pending payments waiting for review.' : 'No records match the selected status filter.' %>
+                        </p>
+                    </div>
+                <% } else { %>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-gray-50 text-gray-500 border-b border-gray-200">
+                                <tr>
+                                    <th class="p-4 font-semibold">Student</th>
+                                    <th class="p-4 font-semibold">Course & Amount</th>
+                                    <th class="p-4 font-semibold">Transaction Ref</th>
+                                    <th class="p-4 font-semibold">Proof</th>
+                                    <th class="p-4 font-semibold">Date Submitted</th>
+                                    <th class="p-4 font-semibold">Status</th>
+                                    <th class="p-4 font-semibold">Verification Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <% payments.forEach(payment => { %>
+                                    <tr class="hover:bg-gray-50/50 transition-colors">
+                                        <td class="p-4 min-w-44">
+                                            <% if (payment.userId) { %>
+                                                <a href="/admin/students/<%= payment.userId._id %>" class="font-medium text-gray-900 hover:underline">
+                                                    <%= payment.userId.name %>
+                                                </a>
+                                                <p class="text-xs text-gray-500 mt-0.5"><%= payment.userId.email %></p>
+                                                <% if (payment.userId.phone) { %>
+                                                    <p class="text-xs text-gray-400 font-mono"><%= payment.userId.phone %></p>
+                                                <% } %>
+                                            <% } else { %>
+                                                <span class="text-xs text-gray-400 italic">User record deleted</span>
+                                            <% } %>
+                                        </td>
+                                        <td class="p-4 min-w-44">
+                                            <% if (payment.courseId) { %>
+                                                <p class="font-semibold text-gray-900"><%= payment.courseId.title %></p>
+                                            <% } else { %>
+                                                <p class="text-gray-400 italic">Course removed</p>
+                                            <% } %>
+                                            <p class="text-xs font-bold text-gray-700 mt-0.5">
+                                                ₹<%= payment.amount.toLocaleString("en-IN") %>
+                                            </p>
+                                        </td>
+                                        <td class="p-4 font-mono text-xs">
+                                            <span class="bg-gray-100 px-2 py-1 rounded font-semibold text-gray-800 select-all">
+                                                <%= payment.transactionReference %>
+                                            </span>
+                                        </td>
+                                        <td class="p-4 text-xs">
+                                            <% if (payment.proofUrl) { %>
+                                                <a href="/payments/<%= payment._id %>/proof" target="_blank" rel="noopener noreferrer nofollow"
+                                                    class="inline-flex items-center gap-1 text-blue-700 hover:text-blue-900 font-medium underline">
+                                                    <span>View Proof</span>
+                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                    </svg>
+                                                </a>
+                                            <% } else { %>
+                                                <span class="text-gray-400">None attached</span>
+                                            <% } %>
+                                        </td>
+                                        <td class="p-4 text-xs text-gray-500 whitespace-nowrap">
+                                            <p><%= new Date(payment.createdAt).toLocaleDateString() %></p>
+                                            <p class="text-[10px] text-gray-400"><%= new Date(payment.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) %></p>
+                                        </td>
+                                        <td class="p-4">
+                                            <% if (payment.status === 'approved') { %>
+                                                <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-green-100 text-green-800">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                                    Approved
+                                                </span>
+                                                <% if (payment.reviewedAt) { %>
+                                                    <p class="text-[10px] text-gray-400 mt-1"><%= new Date(payment.reviewedAt).toLocaleDateString() %></p>
+                                                <% } %>
+                                            <% } else if (payment.status === 'pending') { %>
+                                                <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-yellow-100 text-yellow-800">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse"></span>
+                                                    Pending Review
+                                                </span>
+                                            <% } else if (payment.status === 'rejected') { %>
+                                                <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-red-100 text-red-800">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                                                    Rejected
+                                                </span>
+                                                <% if (payment.rejectionReason) { %>
+                                                    <p class="text-[11px] text-red-700 italic mt-1 max-w-xs break-words">
+                                                        "<%= payment.rejectionReason %>"
+                                                    </p>
+                                                <% } %>
+                                            <% } %>
+                                        </td>
+                                        <td class="p-4 min-w-44">
+                                            <% if (payment.status === 'pending') { %>
+                                                <div class="flex flex-col gap-2">
+                                                    <!-- Approve Button -->
+                                                    <form action="/admin/payments/<%= payment._id %>/approve" method="POST">
+                                                        <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>">
+                                                        <input type="hidden" name="redirectUrl" value="/admin/payments?status=<%= currentStatus %>">
+                                                        <button type="submit"
+                                                            onclick="return confirm('Approve this payment and activate student course access?');"
+                                                            class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-3 py-1.5 rounded-lg text-xs transition-colors shadow-xs">
+                                                            ✓ Approve & Activate
+                                                        </button>
+                                                    </form>
+
+                                                    <!-- Reject Button & Modal Trigger -->
+                                                    <details class="group">
+                                                        <summary class="cursor-pointer text-xs font-medium text-red-600 hover:text-red-800 hover:underline py-1 list-none flex items-center justify-between">
+                                                            <span>✗ Reject submission...</span>
+                                                        </summary>
+                                                        <div class="mt-2 bg-gray-50 border border-gray-200 rounded-lg p-2.5 space-y-2">
+                                                            <form action="/admin/payments/<%= payment._id %>/reject" method="POST" class="space-y-2">
+                                                                <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>">
+                                                                <input type="hidden" name="redirectUrl" value="/admin/payments?status=<%= currentStatus %>">
+                                                                <label class="block text-[11px] font-semibold text-gray-700">
+                                                                    Rejection Reason *
+                                                                </label>
+                                                                <textarea name="rejectionReason" required rows="2"
+                                                                    placeholder="e.g. Reference number not found in bank statement"
+                                                                    class="w-full text-xs border border-gray-300 rounded p-1.5 focus:ring-1 focus:ring-red-500 outline-hidden"></textarea>
+                                                                <button type="submit"
+                                                                    class="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-1 px-2 rounded text-xs transition-colors">
+                                                                    Confirm Rejection
+                                                                </button>
+                                                            </form>
+                                                        </div>
+                                                    </details>
+                                                </div>
+                                            <% } else if (payment.status === 'rejected') { %>
+                                                <!-- Option to re-approve previously rejected payment -->
+                                                <form action="/admin/payments/<%= payment._id %>/approve" method="POST">
+                                                    <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>">
+                                                    <input type="hidden" name="redirectUrl" value="/admin/payments?status=<%= currentStatus %>">
+                                                    <button type="submit"
+                                                        onclick="return confirm('Re-approve this previously rejected payment and activate enrollment?');"
+                                                        class="text-xs text-yellow-700 hover:underline font-medium">
+                                                        Re-approve transaction
+                                                    </button>
+                                                </form>
+                                            <% } else { %>
+                                                <span class="text-xs text-gray-400">Enrollment Active</span>
+                                            <% } %>
+                                        </td>
+                                    </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <% if (totalPages > 1) { %>
+                        <div class="p-4 border-t border-gray-200 flex items-center justify-between text-xs text-gray-500">
+                            <div>
+                                Page <%= page %> of <%= totalPages %> (<%= totalCount %> payments)
+                            </div>
+                            <div class="flex gap-2">
+                                <% if (page > 1) { %>
+                                    <a href="/admin/payments?status=<%= currentStatus %>&page=<%= page - 1 %>"
+                                        class="px-3 py-1.5 border rounded-lg hover:bg-gray-50 text-gray-700 font-medium">
+                                        ← Previous
+                                    </a>
+                                <% } %>
+                                <% if (page < totalPages) { %>
+                                    <a href="/admin/payments?status=<%= currentStatus %>&page=<%= page + 1 %>"
+                                        class="px-3 py-1.5 border rounded-lg hover:bg-gray-50 text-gray-700 font-medium">
+                                        Next →
+                                    </a>
+                                <% } %>
+                            </div>
+                        </div>
+                    <% } %>
+                <% } %>
+            </section>
+        </main>
+    </div>
+</body>
+
+</html>

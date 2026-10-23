@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><%= student.name %> | Student Details</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50 text-gray-900">
+    <div class="min-h-screen md:flex">
+        <!-- Sidebar -->
+        <aside class="bg-white border-r border-gray-200 p-6 md:w-64 shrink-0">
+            <a href="/admin" class="text-2xl font-bold">
+                EDUviber<span class="text-yellow-600">.</span>
+            </a>
+            <p class="text-xs text-gray-500 mt-2">ADMINISTRATION</p>
+
+            <nav class="mt-8 space-y-2">
+                <a href="/admin" class="block rounded-lg px-4 py-3 hover:bg-gray-100">Dashboard</a>
+                <a href="/admin/courses" class="block rounded-lg px-4 py-3 hover:bg-gray-100">Courses</a>
+                <a href="/admin/students" class="block bg-gray-900 text-white rounded-lg px-4 py-3">Students</a>
+                <a href="/admin/enrollments" class="block rounded-lg px-4 py-3 hover:bg-gray-100">Enrollments</a>
+                <a href="/admin/courses/new" class="block rounded-lg px-4 py-3 hover:bg-gray-100">Create Course</a>
+            </nav>
+
+            <form action="/logout" method="POST" class="mt-8">
+                <button class="text-sm text-gray-600 hover:text-red-600">Log out</button>
+            </form>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-5 md:p-10 space-y-8">
+            <div>
+                <a href="/admin/students" class="text-sm text-gray-500 hover:text-gray-900">
+                    ← Back to students
+                </a>
+            </div>
+
+            <!-- Student Profile Summary -->
+            <section class="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 shadow-xs">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-6 mb-6">
+                    <div>
+                        <div class="flex items-center gap-3">
+                            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">
+                                <%= student.name %>
+                            </h1>
+                            <% if (student.isActive) { %>
+                                <span class="rounded-full px-3 py-0.5 text-xs font-semibold bg-green-100 text-green-800">
+                                    Active Account
+                                </span>
+                            <% } else { %>
+                                <span class="rounded-full px-3 py-0.5 text-xs font-semibold bg-gray-100 text-gray-700">
+                                    Inactive Account
+                                </span>
+                            <% } %>
+                        </div>
+                        <p class="text-gray-500 text-sm mt-1">Student ID: <span class="font-mono text-xs"><%= student._id %></span></p>
+                    </div>
+
+                    <div class="text-left sm:text-right text-xs text-gray-500">
+                        <p>Joined on: <strong class="text-gray-800"><%= new Date(student.createdAt).toLocaleDateString() %></strong></p>
+                        <p class="mt-1">
+                            Password Status: 
+                            <% if (student.mustChangePassword) { %>
+                                <span class="text-amber-700 font-semibold">Change Required on Next Login</span>
+                            <% } else { %>
+                                <span class="text-green-700 font-semibold">Configured</span>
+                            <% } %>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 text-sm">
+                    <div>
+                        <span class="text-xs text-gray-400 block font-medium uppercase">Email Address</span>
+                        <span class="font-medium text-gray-900"><%= student.email %></span>
+                    </div>
+                    <div>
+                        <span class="text-xs text-gray-400 block font-medium uppercase">Phone Number</span>
+                        <span class="font-mono text-gray-900"><%= student.phone || "—" %></span>
+                    </div>
+                    <div>
+                        <span class="text-xs text-gray-400 block font-medium uppercase">Total Course Enrollments</span>
+                        <span class="font-bold text-gray-900 text-lg"><%= enrollments.length %></span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Course Enrollments Table -->
+            <section class="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 shadow-xs">
+                <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-900">Course Enrollments</h2>
+                        <p class="text-gray-500 text-xs mt-0.5">Active, pending, and suspended course permissions for this student.</p>
+                    </div>
+                </div>
+
+                <% if (enrollments.length === 0) { %>
+                    <div class="p-8 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                        <p class="text-sm text-gray-500">This student is not currently enrolled in any courses.</p>
+                    </div>
+                <% } else { %>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-gray-50 text-gray-500 border-b border-gray-200">
+                                <tr>
+                                    <th class="p-3 font-semibold">Course</th>
+                                    <th class="p-3 font-semibold">Status</th>
+                                    <th class="p-3 font-semibold">Enrolled On</th>
+                                    <th class="p-3 font-semibold">Change Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <% enrollments.forEach(enrollment => { %>
+                                    <tr>
+                                        <td class="p-3 min-w-48">
+                                            <% if (enrollment.courseId) { %>
+                                                <p class="font-semibold text-gray-900">
+                                                    <%= enrollment.courseId.title %>
+                                                </p>
+                                                <p class="text-xs text-gray-500">
+                                                    Price: ₹<%= enrollment.courseId.price.toLocaleString("en-IN") %>
+                                                </p>
+                                            <% } else { %>
+                                                <p class="text-gray-400 italic">Course removed or missing</p>
+                                            <% } %>
+                                        </td>
+                                        <td class="p-3">
+                                            <% const statusStyles = {
+                                                active: 'bg-green-100 text-green-800',
+                                                pending: 'bg-yellow-100 text-yellow-800',
+                                                suspended: 'bg-red-100 text-red-800',
+                                                expired: 'bg-gray-100 text-gray-700'
+                                            }; %>
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize <%= statusStyles[enrollment.status] || 'bg-gray-100 text-gray-700' %>">
+                                                <%= enrollment.status %>
+                                            </span>
+                                        </td>
+                                        <td class="p-3 text-xs text-gray-500">
+                                            <%= new Date(enrollment.createdAt).toLocaleDateString() %>
+                                        </td>
+                                        <td class="p-3">
+                                            <form action="/admin/enrollments/<%= enrollment._id %>/status" method="POST" class="flex items-center gap-2">
+                                                <input type="hidden" name="redirectUrl" value="/admin/students/<%= student._id %>">
+                                                <select name="status"
+                                                    class="text-xs border border-gray-300 rounded-lg p-1.5 focus:ring-1 focus:ring-yellow-500 outline-hidden">
+                                                    <option value="active" <%= enrollment.status === 'active' ? 'selected' : '' %>>Active</option>
+                                                    <option value="pending" <%= enrollment.status === 'pending' ? 'selected' : '' %>>Pending</option>
+                                                    <option value="suspended" <%= enrollment.status === 'suspended' ? 'selected' : '' %>>Suspended</option>
+                                                    <option value="expired" <%= enrollment.status === 'expired' ? 'selected' : '' %>>Expired</option>
+                                                </select>
+                                                <button type="submit"
+                                                    class="text-xs bg-gray-900 hover:bg-black text-white px-2.5 py-1.5 rounded-lg font-medium transition-colors">
+                                                    Update
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                <% } %>
+            </section>
+
+            <!-- Quick Enroll in New Course -->
+            <section class="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 shadow-xs">
+                <h3 class="text-lg font-bold text-gray-900 mb-2">Enroll Student in a Course</h3>
+                <p class="text-xs text-gray-500 mb-5">Assign an additional published course to this student account.</p>
+
+                <% if (availableCourses.length === 0) { %>
+                    <p class="text-xs text-gray-500 italic bg-gray-50 p-4 rounded-xl border border-gray-200">
+                        This student is already enrolled in all currently published courses.
+                    </p>
+                <% } else { %>
+                    <form action="/admin/enrollments" method="POST" class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                        <input type="hidden" name="userId" value="<%= student._id %>">
+                        <input type="hidden" name="redirectUrl" value="/admin/students/<%= student._id %>">
+
+                        <div class="sm:col-span-1">
+                            <label for="courseId" class="block text-xs font-semibold text-gray-700 mb-1.5">
+                                Select Published Course *
+                            </label>
+                            <select id="courseId" name="courseId" required
+                                class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-yellow-500 outline-hidden">
+                                <option value="">-- Choose Course --</option>
+                                <% availableCourses.forEach(c => { %>
+                                    <option value="<%= c._id %>">
+                                        <%= c.title %> (₹<%= c.price.toLocaleString("en-IN") %>)
+                                    </option>
+                                <% }) %>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="status" class="block text-xs font-semibold text-gray-700 mb-1.5">
+                                Initial Status *
+                            </label>
+                            <select id="status" name="status" required
+                                class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-yellow-500 outline-hidden">
+                                <option value="active" selected>Active (Immediate Access)</option>
+                                <option value="pending">Pending</option>
+                                <option value="suspended">Suspended</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <button type="submit"
+                                class="w-full bg-gray-900 hover:bg-black text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors shadow-xs">
+                                + Assign Enrollment
+                            </button>
+                        </div>
+                    </form>
+                <% } %>
+            </section>
+        </main>
+    </div>
+</body>
+
+</html>

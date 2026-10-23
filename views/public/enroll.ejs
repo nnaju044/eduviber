@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Enroll in <%= course.title %> | EDUviber</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col antialiased">
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+            <a href="/" class="font-bold text-2xl tracking-tight text-gray-900 flex items-center gap-1">
+                EDUviber<span class="text-yellow-600">.</span>
+            </a>
+
+            <nav class="flex items-center gap-4">
+                <a href="/courses/<%= course.slug %>" class="text-sm font-medium text-gray-600 hover:text-gray-900">
+                    ← Back to Course
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-3xl mx-auto px-4 sm:px-6 py-10 flex-1 w-full space-y-8">
+        <div>
+            <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">
+                Enrollment & Payment Instructions
+            </h1>
+            <p class="text-gray-500 text-sm mt-1">
+                Complete your transfer and submit your transaction reference below to request course activation.
+            </p>
+        </div>
+
+        <% if (rejectedPayment) { %>
+            <div class="bg-red-50 border border-red-200 text-red-900 rounded-2xl p-5 text-sm space-y-2">
+                <div class="flex items-center gap-2 font-bold text-red-800">
+                    <span class="w-2.5 h-2.5 rounded-full bg-red-600"></span>
+                    Previous Submission Declined
+                </div>
+                <p class="text-xs text-red-800">
+                    Your previous payment submission (Ref: <strong class="font-mono bg-red-100 px-1.5 py-0.5 rounded"><%= rejectedPayment.transactionReference %></strong>) on <%= new Date(rejectedPayment.createdAt).toLocaleDateString() %> was not approved.
+                </p>
+                <% if (rejectedPayment.rejectionReason) { %>
+                    <div class="bg-white border border-red-200 rounded-xl p-3 text-xs text-red-700">
+                        <strong>Reason provided by administrator:</strong>
+                        <p class="mt-0.5"><%= rejectedPayment.rejectionReason %></p>
+                    </div>
+                <% } %>
+                <p class="text-xs text-red-700 font-medium pt-1">
+                    Please double-check your bank receipt, verify the payment details below, and submit a corrected transaction reference to retry.
+                </p>
+            </div>
+        <% } %>
+
+        <% if (pendingPayment) { %>
+            <div class="bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl p-5 text-sm space-y-2">
+                <div class="flex items-center gap-2 font-semibold">
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                    Verification Currently Pending
+                </div>
+                <p class="text-xs text-amber-800">
+                    You already have a submitted transaction reference <strong class="font-mono bg-amber-100 px-2 py-0.5 rounded"><%= pendingPayment.transactionReference %></strong> for this course submitted on <%= new Date(pendingPayment.createdAt).toLocaleDateString() %>. Our administration team is reviewing it.
+                </p>
+                <p class="text-xs text-amber-700">
+                    If you made an additional payment or need to submit an amended reference, you may submit the form below.
+                </p>
+            </div>
+        <% } %>
+
+        <% if (error) { %>
+            <div role="alert" class="bg-red-50 border border-red-200 text-red-700 rounded-2xl p-4 text-sm">
+                <%= error %>
+            </div>
+        <% } %>
+
+        <!-- Course Summary Card -->
+        <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Enrolling In</span>
+                <h2 class="text-xl font-bold text-gray-900 mt-0.5"><%= course.title %></h2>
+                <p class="text-xs text-gray-500 mt-1">Student account: <strong class="text-gray-700"><%= user.email %></strong></p>
+            </div>
+            <div class="text-left sm:text-right border-t sm:border-t-0 pt-3 sm:pt-0 border-gray-100">
+                <span class="text-xs text-gray-400 uppercase font-semibold">Payable Amount</span>
+                <p class="text-2xl font-black text-gray-900">₹<%= course.price.toLocaleString("en-IN") %></p>
+            </div>
+        </div>
+
+        <!-- Payment Instructions Box -->
+        <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs space-y-5">
+            <h3 class="font-bold text-gray-900 text-base flex items-center gap-2">
+                <span class="w-6 h-6 rounded-full bg-yellow-100 text-yellow-800 text-xs flex items-center justify-center font-bold">1</span>
+                Transfer Payment
+            </h3>
+
+            <p class="text-sm text-gray-600 leading-relaxed">
+                Please transfer the exact amount of <strong>₹<%= course.price.toLocaleString("en-IN") %></strong> using any UPI app (Google Pay, PhonePe, Paytm, BHIM) or NEFT/IMPS bank transfer:
+            </p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm font-mono">
+                <div>
+                    <span class="text-xs text-gray-500 block uppercase font-sans font-semibold">UPI ID / VPA</span>
+                    <span class="font-bold text-gray-900 select-all"><%= paymentConfig.upiId %></span>
+                </div>
+                <div>
+                    <span class="text-xs text-gray-500 block uppercase font-sans font-semibold">Account Holder Name</span>
+                    <span class="font-bold text-gray-900"><%= paymentConfig.accountName %></span>
+                </div>
+                <div>
+                    <span class="text-xs text-gray-500 block uppercase font-sans font-semibold">Bank Name</span>
+                    <span class="font-bold text-gray-900"><%= paymentConfig.bankName %></span>
+                </div>
+                <div>
+                    <span class="text-xs text-gray-500 block uppercase font-sans font-semibold">Account / IFSC</span>
+                    <span class="font-bold text-gray-900 select-all"><%= paymentConfig.accountNumber %> (<%= paymentConfig.ifscCode %>)</span>
+                </div>
+            </div>
+
+            <div class="text-xs text-gray-500 bg-yellow-50/70 border border-yellow-200 rounded-xl p-3.5 space-y-1">
+                <p class="font-semibold text-yellow-900">Important Instructions:</p>
+                <p>• Note the 12-digit UPI UTR / Transaction ID or IMPS bank reference from your payment confirmation screen.</p>
+                <p>• We never ask for your debit card details, UPI PIN, or bank passwords.</p>
+            </div>
+        </div>
+
+        <!-- Submission Form -->
+        <form id="enroll-form" action="/courses/<%= course.slug %>/enroll" method="POST"
+            class="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs space-y-5">
+            <h3 class="font-bold text-gray-900 text-base flex items-center gap-2">
+                <span class="w-6 h-6 rounded-full bg-yellow-100 text-yellow-800 text-xs flex items-center justify-center font-bold">2</span>
+                Submit Transaction Reference
+            </h3>
+
+            <div>
+                <label for="transactionReference" class="block text-sm font-medium text-gray-800 mb-1">
+                    Transaction ID / UPI Reference (UTR) *
+                </label>
+                <input id="transactionReference" name="transactionReference" type="text" required maxlength="100"
+                    placeholder="e.g. 402918239012 or IMPS-99214488"
+                    value="<%= values.transactionReference || '' %>"
+                    class="w-full border border-gray-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-yellow-500 outline-hidden font-mono">
+                <p class="text-xs text-gray-400 mt-1.5">
+                    Found in your bank app or UPI receipt screen.
+                </p>
+            </div>
+
+            <!-- Optional Proof File or Link -->
+            <div class="space-y-3 pt-1 border-t border-gray-100">
+                <label class="block text-sm font-medium text-gray-800 mb-1">
+                    Payment Receipt Proof (Optional)
+                </label>
+                
+                <div>
+                    <label for="proofFile" class="block text-xs text-gray-500 mb-1">
+                        Upload Screenshot (PNG, JPEG, or WebP up to 2.5 MB)
+                    </label>
+                    <input id="proofFile" type="file" accept="image/png,image/jpeg,image/webp"
+                        class="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200">
+                    <input type="hidden" id="proofData" name="proofData" value="">
+                </div>
+
+                <div class="text-center text-xs text-gray-400 font-semibold">— OR —</div>
+
+                <div>
+                    <label for="proofUrl" class="block text-xs text-gray-500 mb-1">
+                        Link from Trusted Cloud Drive (Google Drive, Dropbox, OneDrive)
+                    </label>
+                    <input id="proofUrl" name="proofUrl" type="url" maxlength="2048"
+                        placeholder="https://drive.google.com/file/d/..."
+                        value="<%= values.proofUrl || '' %>"
+                        class="w-full border border-gray-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-yellow-500 outline-hidden">
+                </div>
+            </div>
+
+            <div class="pt-3">
+                <button type="submit"
+                    class="w-full bg-gray-900 hover:bg-black text-white font-semibold py-3.5 px-6 rounded-xl transition-colors shadow-xs text-sm">
+                    Submit Payment for Admin Verification
+                </button>
+            </div>
+
+            <p class="text-center text-xs text-gray-500 pt-1">
+                Submissions are verified manually by administrators. Course access is activated upon review.
+            </p>
+        </form>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 py-6 mt-12">
+        <div class="max-w-4xl mx-auto px-4 text-center text-xs text-gray-500">
+            <p>© <%= new Date().getFullYear() %> EDUviber. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Convert image file to Base64 data URL before submission if chosen
+        const fileInput = document.getElementById("proofFile");
+        const proofDataInput = document.getElementById("proofData");
+        const form = document.getElementById("enroll-form");
+
+        if (fileInput) {
+            fileInput.addEventListener("change", function () {
+                const file = fileInput.files[0];
+                if (!file) {
+                    proofDataInput.value = "";
+                    return;
+                }
+                if (file.size > 2.5 * 1024 * 1024) {
+                    alert("Please select an image smaller than 2.5 MB.");
+                    fileInput.value = "";
+                    proofDataInput.value = "";
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    proofDataInput.value = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+    </script>
+</body>
+
+</html>

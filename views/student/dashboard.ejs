@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Student Dashboard | EDUviber</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col">
+    <!-- Top Navigation -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+            <a href="/dashboard" class="font-bold text-2xl tracking-tight">
+                EDUviber<span class="text-yellow-600">.</span>
+            </a>
+
+            <div class="flex items-center gap-4 sm:gap-6">
+                <div class="hidden sm:flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-full bg-yellow-100 text-yellow-800 flex items-center justify-center font-bold text-xs uppercase">
+                        <%= (student.name || "S").charAt(0) %>
+                    </span>
+                    <span class="text-sm font-medium text-gray-700">
+                        <%= student.name %>
+                    </span>
+                </div>
+
+                <form action="/logout" method="POST" class="inline">
+                    <button type="submit"
+                        class="text-sm text-gray-500 hover:text-red-600 font-medium transition-colors">
+                        Log out
+                    </button>
+                </form>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8 flex-1 w-full space-y-8">
+        <!-- Welcome Section -->
+        <section class="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 shadow-sm">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">
+                        Welcome back, <%= student.name %>!
+                    </h1>
+                    <p class="text-gray-500 mt-1 text-sm sm:text-base">
+                        Pick up right where you left off and keep moving through your course modules.
+                    </p>
+                </div>
+
+                <% if (stats.totalCourses > 0) { %>
+                    <div class="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
+                        <div class="text-right">
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Overall Completion</p>
+                            <p class="text-lg font-bold text-gray-900"><%= stats.overallProgressPercent %>%</p>
+                        </div>
+                        <div class="w-12 h-12 relative flex items-center justify-center">
+                            <svg class="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
+                                <path class="text-gray-200" stroke-width="3.5" stroke="currentColor" fill="none"
+                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                <path class="text-yellow-600" stroke-dasharray="<%= stats.overallProgressPercent %>, 100"
+                                    stroke-width="3.5" stroke-linecap="round" stroke="currentColor" fill="none"
+                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            </svg>
+                            <span class="absolute text-[10px] font-bold text-gray-700">
+                                <%= stats.overallProgressPercent %>%
+                            </span>
+                        </div>
+                    </div>
+                <% } %>
+            </div>
+
+            <!-- Stats Overview Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-100">
+                <div class="bg-gray-50 rounded-xl p-4">
+                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Enrolled Courses</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-1"><%= stats.totalCourses %></p>
+                </div>
+                <div class="bg-gray-50 rounded-xl p-4">
+                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Completed Lessons</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-1">
+                        <%= stats.totalCompletedLessons %>
+                        <span class="text-xs font-normal text-gray-500">/ <%= stats.totalPublishedLessons %> total</span>
+                    </p>
+                </div>
+                <div class="bg-gray-50 rounded-xl p-4">
+                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Account Status</p>
+                    <p class="text-2xl font-bold text-emerald-600 mt-1 flex items-center gap-1.5">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                        Active
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- My Courses Section -->
+        <section>
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-xl sm:text-2xl font-bold tracking-tight">My Courses</h2>
+                    <p class="text-sm text-gray-500 mt-0.5">Your active learning programs and curriculum</p>
+                </div>
+                <% if (courses.length > 0) { %>
+                    <span class="text-xs font-semibold text-gray-500 bg-gray-200 px-3 py-1 rounded-full">
+                        <%= courses.length %> <%= courses.length === 1 ? 'Course' : 'Courses' %>
+                    </span>
+                <% } %>
+            </div>
+
+            <% if (courses.length === 0) { %>
+                <!-- Empty State -->
+                <div class="bg-white border border-gray-200 rounded-2xl p-10 sm:p-16 text-center max-w-xl mx-auto my-6 shadow-sm">
+                    <div class="w-16 h-16 bg-yellow-50 text-yellow-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900">
+                        You haven't enrolled in any courses yet.
+                    </h3>
+                    <p class="text-gray-500 mt-2 text-sm leading-relaxed">
+                        Course access will appear here after enrollment is activated. If you have recently registered or made a payment, your enrollment will appear as soon as it is confirmed by the administrator.
+                    </p>
+                </div>
+            <% } else { %>
+                <!-- Course Cards Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <% courses.forEach(course => { %>
+                        <article class="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm flex flex-col hover:border-gray-300 transition-all">
+                            <!-- Course Thumbnail / Banner -->
+                            <div class="relative w-full h-48 bg-gradient-to-br from-gray-900 via-gray-800 to-yellow-950 overflow-hidden">
+                                <% if (course.thumbnail) { %>
+                                    <img src="<%= course.thumbnail %>" alt="<%= course.title %>"
+                                        class="w-full h-full object-cover"
+                                        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div class="hidden w-full h-full items-center justify-center p-6 text-white text-center">
+                                        <p class="text-xl font-bold"><%= course.title %></p>
+                                    </div>
+                                <% } else { %>
+                                    <div class="w-full h-full flex flex-col items-center justify-center p-6 text-white text-center">
+                                        <span class="text-3xl font-extrabold text-yellow-500">EDUviber.</span>
+                                        <p class="text-lg font-semibold mt-2 line-clamp-2 px-4"><%= course.title %></p>
+                                    </div>
+                                <% } %>
+
+                                <!-- Status Badge -->
+                                <div class="absolute top-3 right-3">
+                                    <% if (course.progressPercent === 100) { %>
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500 text-white shadow-sm">
+                                            ✓ Completed
+                                        </span>
+                                    <% } else if (course.progressPercent > 0) { %>
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-yellow-500 text-gray-900 shadow-sm">
+                                            In Progress
+                                        </span>
+                                    <% } else { %>
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-white/90 text-gray-800 shadow-sm backdrop-blur-sm">
+                                            Not Started
+                                        </span>
+                                    <% } %>
+                                </div>
+                            </div>
+
+                            <!-- Course Body -->
+                            <div class="p-6 flex-1 flex flex-col justify-between">
+                                <div>
+                                    <div class="flex items-center justify-between gap-2 text-xs text-gray-500 mb-1.5">
+                                        <% if (course.instructor) { %>
+                                            <span class="font-medium text-gray-700">By <%= course.instructor %></span>
+                                        <% } else { %>
+                                            <span>Comprehensive Course</span>
+                                        <% } %>
+                                        <span><%= course.totalLessons %> <%= course.totalLessons === 1 ? 'lesson' : 'lessons' %></span>
+                                    </div>
+
+                                    <h3 class="text-xl font-bold text-gray-900 leading-snug">
+                                        <%= course.title %>
+                                    </h3>
+
+                                    <p class="text-sm text-gray-600 mt-2 line-clamp-2">
+                                        <%= course.description %>
+                                    </p>
+                                </div>
+
+                                <!-- Progress Bar & Action -->
+                                <div class="mt-6 pt-5 border-t border-gray-100">
+                                    <div class="flex items-center justify-between text-xs mb-2">
+                                        <span class="font-medium text-gray-600">
+                                            <%= course.completedLessons %> of <%= course.totalLessons %> completed
+                                        </span>
+                                        <span class="font-bold text-gray-900">
+                                            <%= course.progressPercent %>%
+                                        </span>
+                                    </div>
+
+                                    <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden mb-5">
+                                        <div class="bg-yellow-600 h-2 rounded-full transition-all duration-500"
+                                            style="width: <%= course.progressPercent %>%;"></div>
+                                    </div>
+
+                                    <% if (course.nextLesson) { %>
+                                        <a href="/courses/<%= course._id %>/lessons/<%= course.nextLesson._id %>/watch"
+                                            class="inline-flex items-center justify-center w-full bg-gray-900 hover:bg-black text-white font-medium py-3 px-4 rounded-xl transition-colors shadow-sm text-sm">
+                                            <% if (course.progressPercent === 100) { %>
+                                                Review Course →
+                                            <% } else if (course.progressPercent > 0) { %>
+                                                Continue Learning (<%= course.nextLesson.title %>) →
+                                            <% } else { %>
+                                                Start Learning →
+                                            <% } %>
+                                        </a>
+                                    <% } else { %>
+                                        <button disabled
+                                            class="w-full bg-gray-100 text-gray-400 font-medium py-3 px-4 rounded-xl cursor-not-allowed text-sm">
+                                            No lessons available yet
+                                        </button>
+                                    <% } %>
+
+                                    <!-- Collapsible Lesson Outline -->
+                                    <% if (course.totalLessons > 0) { %>
+                                        <details class="group mt-4 pt-4 border-t border-gray-100">
+                                            <summary class="flex items-center justify-between cursor-pointer text-xs font-semibold text-gray-600 hover:text-gray-900 select-none py-1 list-none">
+                                                <span class="flex items-center gap-1.5">
+                                                    <svg class="w-4 h-4 text-gray-400 group-open:rotate-90 transition-transform" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                                    </svg>
+                                                    Course Curriculum (<%= course.totalLessons %>)
+                                                </span>
+                                                <span class="text-xs text-yellow-700 hover:underline">View Outline</span>
+                                            </summary>
+
+                                            <div class="mt-3 space-y-4 pl-2 pr-1 max-h-80 overflow-y-auto">
+                                                <% course.modules.forEach(module => { %>
+                                                    <div>
+                                                        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">
+                                                            <%= module.name %>
+                                                        </p>
+                                                        <ul class="space-y-1.5">
+                                                            <% module.lessons.forEach(lesson => { %>
+                                                                <li class="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors text-xs">
+                                                                    <div class="flex items-center gap-2.5 min-w-0 pr-2">
+                                                                        <% if (lesson.isCompleted) { %>
+                                                                            <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0" title="Completed">
+                                                                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                                                                </svg>
+                                                                            </span>
+                                                                        <% } else if (lesson.lastPositionSeconds > 0) { %>
+                                                                            <span class="w-5 h-5 rounded-full bg-yellow-100 text-yellow-700 flex items-center justify-center font-bold text-[10px] shrink-0" title="In Progress">
+                                                                                ▶
+                                                                            </span>
+                                                                        <% } else { %>
+                                                                            <span class="w-5 h-5 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center font-semibold text-[10px] shrink-0">
+                                                                                <%= lesson.order %>
+                                                                            </span>
+                                                                        <% } %>
+                                                                        <span class="truncate font-medium text-gray-800">
+                                                                            <%= lesson.title %>
+                                                                        </span>
+                                                                    </div>
+
+                                                                    <div class="flex items-center gap-3 shrink-0">
+                                                                        <% if (lesson.durationSeconds > 0) { %>
+                                                                            <span class="text-gray-400 text-[11px]">
+                                                                                <%= Math.floor(lesson.durationSeconds / 60) %>:<%= String(Math.floor(lesson.durationSeconds % 60)).padStart(2, '0') %>
+                                                                            </span>
+                                                                        <% } %>
+                                                                        <a href="/courses/<%= course._id %>/lessons/<%= lesson._id %>/watch"
+                                                                            class="font-semibold text-yellow-700 hover:text-yellow-800 hover:underline">
+                                                                            <%= lesson.isCompleted ? 'Rewatch' : (lesson.lastPositionSeconds > 0 ? 'Resume' : 'Watch') %>
+                                                                        </a>
+                                                                    </div>
+                                                                </li>
+                                                            <% }) %>
+                                                        </ul>
+                                                    </div>
+                                                <% }) %>
+                                            </div>
+                                        </details>
+                                    <% } %>
+                                </div>
+                            </div>
+                        </article>
+                    <% }) %>
+                </div>
+            <% } %>
+        </section>
+
+        <!-- Payment History & Order Status Section -->
+        <section class="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 shadow-xs">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-gray-900">
+                        Payment & Order History
+                    </h2>
+                    <p class="text-sm text-gray-500 mt-0.5">
+                        Track the verification status of your offline/UPI course purchases.
+                    </p>
+                </div>
+            </div>
+
+            <% if (!payments || payments.length === 0) { %>
+                <div class="p-8 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                    <p class="text-xs text-gray-500">No payment records found on your account.</p>
+                </div>
+            <% } else { %>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-gray-50 text-gray-500 border-b border-gray-200 text-xs">
+                            <tr>
+                                <th class="p-3.5 font-semibold">Course</th>
+                                <th class="p-3.5 font-semibold">Amount</th>
+                                <th class="p-3.5 font-semibold">Transaction Ref</th>
+                                <th class="p-3.5 font-semibold">Submitted</th>
+                                <th class="p-3.5 font-semibold">Status</th>
+                                <th class="p-3.5 font-semibold">Details / Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <% payments.forEach(payment => { %>
+                                <tr class="hover:bg-gray-50/50 transition-colors">
+                                    <td class="p-3.5 font-semibold text-gray-900 min-w-44">
+                                        <% if (payment.courseId) { %>
+                                            <%= payment.courseId.title %>
+                                        <% } else { %>
+                                            <span class="text-gray-400 italic">Course</span>
+                                        <% } %>
+                                    </td>
+                                    <td class="p-3.5 font-medium text-gray-900">
+                                        ₹<%= payment.amount.toLocaleString("en-IN") %>
+                                    </td>
+                                    <td class="p-3.5 font-mono text-xs text-gray-600">
+                                        <%= payment.transactionReference %>
+                                    </td>
+                                    <td class="p-3.5 text-xs text-gray-500">
+                                        <%= new Date(payment.createdAt).toLocaleDateString() %>
+                                    </td>
+                                    <td class="p-3.5">
+                                        <% if (payment.status === 'approved') { %>
+                                            <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-green-100 text-green-800">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                                Verified & Enrolled
+                                            </span>
+                                        <% } else if (payment.status === 'pending') { %>
+                                            <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-yellow-100 text-yellow-800">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse"></span>
+                                                Pending Review
+                                            </span>
+                                        <% } else if (payment.status === 'rejected') { %>
+                                            <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-red-100 text-red-800">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                                                Declined
+                                            </span>
+                                        <% } %>
+                                    </td>
+                                    <td class="p-3.5 text-xs">
+                                        <% if (payment.status === 'rejected') { %>
+                                            <div class="space-y-1">
+                                                <% if (payment.rejectionReason) { %>
+                                                    <p class="text-red-700 italic">"<%= payment.rejectionReason %>"</p>
+                                                <% } %>
+                                                <% if (payment.courseId && payment.courseId.slug) { %>
+                                                    <a href="/courses/<%= payment.courseId.slug %>/enroll"
+                                                        class="inline-block font-semibold text-yellow-700 hover:text-yellow-800 hover:underline">
+                                                        Retry Payment →
+                                                    </a>
+                                                <% } %>
+                                            </div>
+                                        <% } else if (payment.status === 'pending') { %>
+                                            <span class="text-gray-400">Under admin verification</span>
+                                        <% } else if (payment.status === 'approved') { %>
+                                            <span class="text-emerald-700 font-medium">Access active</span>
+                                        <% } %>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } %>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-12 py-6">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-500">
+            <p>© <%= new Date().getFullYear() %> EDUviber. All rights reserved.</p>
+            <p>Signed in as <%= student.email %></p>
+        </div>
+    </footer>
+</body>
+
+</html>

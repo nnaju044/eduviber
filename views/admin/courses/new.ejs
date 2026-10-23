@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Create Course</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50 text-gray-900">
+    <main class="max-w-3xl mx-auto p-5 md:p-10">
+        <a href="/admin/courses" class="text-sm text-gray-500 hover:text-gray-900">← Back to courses</a>
+
+        <h1 class="text-3xl font-bold mt-5">Create a course</h1>
+        <p class="text-gray-500 mt-2 mb-8">Add the course details before attaching video lessons.</p>
+
+        <% if (error) { %>
+            <div role="alert" class="mb-6 rounded-lg bg-red-50 text-red-700 p-4">
+                <%= error %>
+            </div>
+            <% } %>
+
+                <form action="/admin/courses" method="POST" class="bg-white border rounded-xl p-6 md:p-8 space-y-5">
+                    <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>">
+
+                    <div>
+                        <label for="title" class="block font-medium text-sm mb-2">Course title *</label>
+                        <input id="title" name="title" required maxlength="150" value="<%= values.title || '' %>"
+                            class="w-full border rounded-lg p-3" placeholder="e.g. Digital Marketing for Teachers">
+                    </div>
+
+                    <div>
+                        <label for="description" class="block font-medium text-sm mb-2">Description *</label>
+                        <textarea id="description" name="description" required rows="5" maxlength="10000"
+                            class="w-full border rounded-lg p-3"
+                            placeholder="What will students learn?"><%= values.description || '' %></textarea>
+                    </div>
+
+                    <div>
+                        <label for="instructor" class="block font-medium text-sm mb-2">Instructor</label>
+                        <input id="instructor" name="instructor" maxlength="150" value="<%= values.instructor || '' %>"
+                            class="w-full border rounded-lg p-3" placeholder="Instructor name">
+                    </div>
+
+                    <div>
+                        <label for="price" class="block font-medium text-sm mb-2">Course price (INR) *</label>
+                        <input id="price" name="price" type="number" min="0" max="10000000" step="0.01" required
+                            value="<%= values.price || '' %>" class="w-full border rounded-lg p-3" placeholder="999">
+                    </div>
+
+                    <div>
+                        <label for="thumbnail" class="block font-medium text-sm mb-2">Thumbnail image URL</label>
+                        <input id="thumbnail" name="thumbnail" type="url" maxlength="2048"
+                            value="<%= values.thumbnail || '' %>" class="w-full border rounded-lg p-3"
+                            placeholder="https://example.com/course-thumbnail.jpg">
+                        <p class="text-xs text-gray-500 mt-2">Optional. We can add secure image uploads later.</p>
+                    </div>
+
+                    <div class="bg-yellow-50 text-yellow-900 rounded-lg p-4 text-sm">
+                        This course will be saved as a draft. Students won't see it as a published course yet.
+                    </div>
+
+                    <div class="flex flex-wrap gap-3">
+                        <button type="submit" class="bg-gray-900 text-white px-6 py-3 rounded-lg font-medium">
+                            Save Draft
+                        </button>
+                        <a href="/admin/courses" class="border px-6 py-3 rounded-lg font-medium">Cancel</a>
+                    </div>
+                </form>
+    </main>
+</body>
+
+</html>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50 text-gray-900">
+    <div class="min-h-screen md:flex">
+        <aside class="bg-white border-r border-gray-200 p-6 md:w-64">
+            <a href="/admin" class="text-2xl font-bold">
+                EDUviber<span class="text-yellow-600">.</span>
+            </a>
+            <p class="text-xs text-gray-500 mt-2">ADMINISTRATION</p>
+
+            <nav class="mt-8 space-y-2">
+                <a href="/admin" class="block bg-gray-900 text-white rounded-lg px-4 py-3">Dashboard</a>
+                <a href="/admin/courses" class="block rounded-lg px-4 py-3 hover:bg-gray-100">Courses</a>
+                <a href="/admin/students" class="block rounded-lg px-4 py-3 hover:bg-gray-100">Students</a>
+                <a href="/admin/enrollments" class="block rounded-lg px-4 py-3 hover:bg-gray-100">Enrollments</a>
+                <a href="/admin/payments" class="block rounded-lg px-4 py-3 hover:bg-gray-100">Payments</a>
+                <a href="/admin/courses/new" class="block rounded-lg px-4 py-3 hover:bg-gray-100">Create Course</a>
+            </nav>
+
+            <form action="/logout" method="POST" class="mt-8">
+                <button class="text-sm text-gray-600 hover:text-red-600">Log out</button>
+            </form>
+        </aside>
+
+        <main class="flex-1 p-5 md:p-10">
+            <header class="flex flex-wrap items-center justify-between gap-4 mb-8">
+                <div>
+                    <h1 class="text-3xl font-bold">Dashboard</h1>
+                    <p class="text-gray-500 mt-1">Welcome back, <%= admin.name %>.</p>
+                </div>
+                <a href="/admin/courses/new" class="rounded-lg bg-gray-900 text-white px-5 py-3 font-medium">
+                    + Create Course
+                </a>
+            </header>
+
+            <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+                <% const cards=[
+                    { label: "Students", value: stats.totalStudents, href: "/admin/students" },
+                    { label: "Courses", value: stats.totalCourses, href: "/admin/courses" },
+                    { label: "Video Lessons", value: stats.totalLessons, href: "/admin/courses" },
+                    { label: "Active Enrollments", value: stats.activeEnrollments, href: "/admin/enrollments?status=active" },
+                    { label: "Pending Payments", value: stats.pendingPayments, href: "/admin/payments?status=pending" }
+                ]; %>
+
+                <% cards.forEach(card=> { %>
+                    <a href="<%= card.href %>" class="block bg-white border border-gray-200 rounded-xl p-6 hover:border-gray-400 transition-all">
+                        <p class="text-sm text-gray-500 flex items-center justify-between">
+                            <span><%= card.label %></span>
+                            <span class="text-xs text-gray-400">→</span>
+                        </p>
+                        <p class="text-3xl font-bold mt-3 text-gray-900">
+                            <%= card.value %>
+                        </p>
+                    </a>
+                <% }) %>
+            </section>
+
+            <section class="bg-white border border-gray-200 rounded-xl mt-8 p-6">
+                <div class="flex justify-between items-center gap-4 mb-5">
+                    <h2 class="text-xl font-semibold">Recently Created Courses</h2>
+                    <a href="/admin/courses" class="text-sm text-yellow-700 font-medium">View all</a>
+                </div>
+
+                <% if (recentCourses.length===0) { %>
+                    <div class="py-10 text-center">
+                        <p class="text-gray-600">No courses yet.</p>
+                        <a href="/admin/courses/new"
+                            class="inline-block mt-4 bg-gray-900 text-white px-4 py-2 rounded-lg">
+                            Create your first course
+                        </a>
+                    </div>
+                    <% } else { %>
+                        <div class="divide-y">
+                            <% recentCourses.forEach(course=> { %>
+                                <div class="py-4 flex flex-wrap items-center justify-between gap-3">
+                                    <div>
+                                        <h3 class="font-medium">
+                                            <%= course.title %>
+                                        </h3>
+                                        <p class="text-sm text-gray-500 mt-1">
+                                            ₹<%= course.price.toLocaleString("en-IN") %>
+                                        </p>
+                                    </div>
+                                    <span
+                                        class="text-xs rounded-full px-3 py-1 <%= course.isPublished ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-800' %>">
+                                        <%= course.isPublished ? "Published" : "Draft" %>
+                                    </span>
+                                </div>
+                                <% }) %>
+                        </div>
+                        <% } %>
+            </section>
+        </main>
+    </div>
+</body>
+
+</html>
