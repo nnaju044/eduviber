@@ -10,6 +10,7 @@ import studentRoutes from "../routes/studentRoutes.js";
 import adminRoutes from "../routes/adminRoutes.js";
 import Course from "../models/Course.js";
 import Lesson from "../models/Lesson.js";
+import { connectTestDB, assertTestDatabaseIsolation } from "../config/testDbGuard.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,12 +24,9 @@ async function runStorefrontTests() {
     let testLessonDraft;
 
     try {
-        if (!process.env.MONGODB_URI) {
-            throw new Error("MONGODB_URI missing in .env");
-        }
-
-        await mongoose.connect(process.env.MONGODB_URI);
-        console.log("✓ Connected to MongoDB Atlas");
+        await connectTestDB();
+        assertTestDatabaseIsolation(mongoose);
+        console.log(`✓ Connected to isolated test database: [${mongoose.connection.name}]`);
 
         // Set up test express app mirroring server.js
         const app = express();
@@ -231,4 +229,13 @@ async function runStorefrontTests() {
     }
 }
 
-runStorefrontTests();
+runStorefrontTests()
+    .then(() => {
+        if (process.exitCode && process.exitCode !== 0) {
+            process.exit(process.exitCode);
+        }
+    })
+    .catch((err) => {
+        console.error("TEST FAILED ✗:", err);
+        process.exit(1);
+    });

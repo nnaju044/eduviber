@@ -145,7 +145,7 @@ export async function showCourseDetail(req, res, next) {
             courseId: course._id,
             isPublished: true,
         })
-            .select("title description moduleName order durationSeconds")
+            .select("title description moduleName order durationSeconds durationMinutes isFreePreview")
             .sort({ order: 1 })
             .lean();
 
@@ -175,7 +175,8 @@ export async function showCourseDetail(req, res, next) {
                 courseId: course._id,
                 status: "active",
             }).lean();
-            isEnrolled = Boolean(enrollment) || user.role === "admin";
+            const isAdmin = user.role === "admin" || user.role === "super_admin";
+            isEnrolled = Boolean(enrollment) || isAdmin;
         }
 
         res.render("public/course-detail", {
@@ -213,7 +214,7 @@ function getPaymentInstructionsConfig() {
     };
 }
 
-function validatePaymentProof(proof) {
+export function validatePaymentProof(proof) {
     if (!proof || typeof proof !== "string") {
         return { valid: true, proofUrl: "" };
     }
@@ -424,10 +425,11 @@ export async function submitEnrollmentPayment(req, res, next) {
             });
         }
 
-        // Amount derived strictly from course record on server
+        // Amount and owner derived strictly from course record on server
         const payment = await Payment.create({
             userId: user.id,
             courseId: course._id,
+            ownerId: course.ownerId,
             amount: course.price,
             transactionReference,
             proofUrl: proofValidation.proofUrl,
@@ -485,7 +487,7 @@ export async function servePaymentProof(req, res, next) {
 
         // Authorization check: User must be admin or the payment's owner
         const isOwner = payment.userId.toString() === user.id;
-        const isAdmin = user.role === "admin";
+        const isAdmin = user.role === "admin" || user.role === "super_admin";
 
         if (!isOwner && !isAdmin) {
             return res.status(403).send("Access denied.");

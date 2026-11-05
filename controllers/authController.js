@@ -6,8 +6,9 @@ import { loginRateLimiter } from "../middleware/rateLimiter.js";
 
 export function showLogin(req, res) {
     if (req.session.user) {
+        const isAdmin = req.session.user.role === "admin" || req.session.user.role === "super_admin";
         return res.redirect(
-            req.session.user.role === "admin" ? "/admin" : "/dashboard"
+            isAdmin ? "/admin" : "/dashboard"
         );
     }
 
@@ -46,13 +47,17 @@ export async function login(req, res, next) {
             });
         });
 
+        // Ensure newly authenticated session immediately has a fresh CSRF token
+        req.session.csrfToken = crypto.randomBytes(24).toString("hex");
+
         req.session.user = {
             id: user._id.toString(),
             name: user.name,
             email: user.email,
-            role: user.role,
+            role: user.role === "admin" ? "super_admin" : user.role,
             isActive: user.isActive,
             mustChangePassword: user.mustChangePassword,
+            teacherProfile: user.teacherProfile || null,
         };
 
         req.session.save((error) => {
@@ -62,8 +67,9 @@ export async function login(req, res, next) {
                 return res.redirect("/change-password");
             }
 
+            const isAdmin = user.role === "admin" || user.role === "super_admin";
             return res.redirect(
-                user.role === "admin" ? "/admin" : "/dashboard"
+                isAdmin ? "/admin" : "/dashboard"
             );
         });
     } catch (error) {
@@ -127,7 +133,8 @@ export async function changePassword(req, res, next) {
         req.session.save((error) => {
             if (error) return next(error);
 
-            res.redirect(user.role === "admin" ? "/admin" : "/dashboard");
+            const isAdmin = user.role === "admin" || user.role === "super_admin";
+            res.redirect(isAdmin ? "/admin" : "/dashboard");
         });
     } catch (error) {
         next(error);
@@ -136,8 +143,9 @@ export async function changePassword(req, res, next) {
 
 export function showForgotPassword(req, res) {
     if (req.session?.user) {
+        const isAdmin = req.session.user.role === "admin" || req.session.user.role === "super_admin";
         return res.redirect(
-            req.session.user.role === "admin" ? "/admin" : "/dashboard"
+            isAdmin ? "/admin" : "/dashboard"
         );
     }
     res.render("auth/forgot-password", {

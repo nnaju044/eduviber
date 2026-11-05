@@ -28,6 +28,7 @@ import Lesson from "../models/Lesson.js";
 import Enrollment from "../models/Enrollment.js";
 import Payment from "../models/Payment.js";
 import Progress from "../models/Progress.js";
+import { connectTestDB, assertTestDatabaseIsolation } from "../config/testDbGuard.js";
 
 import authRoutes from "../routes/authRoutes.js";
 import adminRoutes from "../routes/adminRoutes.js";
@@ -150,8 +151,9 @@ class SessionAgent {
 async function runEndToEndLifecycle() {
     console.log("=== STARTING COMPLETE END-TO-END LIFECYCLE TESTS ===");
 
-    await mongoose.connect(process.env.MONGODB_URI);
-    console.log("✓ Connected to MongoDB Atlas");
+    await connectTestDB();
+    assertTestDatabaseIsolation(mongoose);
+    console.log(`✓ Connected to isolated test database: [${mongoose.connection.name}]`);
 
     await createApp();
     console.log(`✓ Test application running at ${baseUrl}`);
@@ -660,7 +662,11 @@ async function runEndToEndLifecycle() {
     }
 }
 
-runEndToEndLifecycle().catch((err) => {
-    console.error("\n❌ End-to-End Validation Failed:", err);
-    process.exit(1);
-});
+runEndToEndLifecycle()
+    .then(() => {
+        process.exit(0);
+    })
+    .catch((err) => {
+        console.error("\n❌ End-to-End Validation Failed:", err);
+        process.exit(1);
+    });

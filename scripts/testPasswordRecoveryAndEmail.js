@@ -17,6 +17,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 import User from "../models/User.js";
+import { connectTestDB, assertTestDatabaseIsolation, getTestDatabaseUri } from "../config/testDbGuard.js";
 import Course from "../models/Course.js";
 import Payment from "../models/Payment.js";
 import Enrollment from "../models/Enrollment.js";
@@ -55,7 +56,7 @@ async function setupTestApp() {
     app.use(express.json());
 
     sessionStore = MongoStore.create({
-        mongoUrl: process.env.MONGODB_URI,
+        mongoUrl: getTestDatabaseUri(),
         collectionName: "test_sessions",
         ttl: 3600,
     });
@@ -124,12 +125,9 @@ async function runTests() {
     console.log("=== STARTING PASSWORD RECOVERY & TRANSACTIONAL EMAIL TESTS ===");
     clearSentEmails();
 
-    if (!process.env.MONGODB_URI) {
-        throw new Error("MONGODB_URI not configured in .env");
-    }
-
-    await mongoose.connect(process.env.MONGODB_URI);
-    console.log("✓ Connected to MongoDB Atlas");
+    await connectTestDB();
+    assertTestDatabaseIsolation(mongoose);
+    console.log(`✓ Connected to isolated test database: [${mongoose.connection.name}]`);
 
     await setupTestApp();
     console.log(`✓ Test server running at ${serverBaseUrl}`);

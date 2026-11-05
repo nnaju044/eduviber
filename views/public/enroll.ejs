@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Enroll in <%= course.title %> | EDUviber</title>
+    <link rel="icon" type="image/png" href="/images/EDUviber_LOGO.png">
+    <link rel="apple-touch-icon" href="/images/EDUviber_LOGO.png">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
@@ -129,6 +131,7 @@
         <!-- Submission Form -->
         <form id="enroll-form" action="/courses/<%= course.slug %>/enroll" method="POST"
             class="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs space-y-5">
+            <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>">
             <h3 class="font-bold text-gray-900 text-base flex items-center gap-2">
                 <span class="w-6 h-6 rounded-full bg-yellow-100 text-yellow-800 text-xs flex items-center justify-center font-bold">2</span>
                 Submit Transaction Reference

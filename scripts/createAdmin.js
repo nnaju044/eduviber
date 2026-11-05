@@ -40,7 +40,7 @@ async function createAdmin() {
             email,
             phone: ADMIN_PHONE.trim(),
             passwordHash,
-            role: "admin",
+            role: "super_admin",
             mustChangePassword: false,
             isActive: true,
         });

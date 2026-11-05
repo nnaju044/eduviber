@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { getTestDatabaseUri, assertTestDatabaseIsolation, maskUri } from "./testDbGuard.js";
 
 let cached = global.mongoose;
 
@@ -6,14 +7,16 @@ if (!cached) {
     cached = global.mongoose = { conn: null, promise: null };
 }
 
-export async function connectDB() {
-    const uri = process.env.MONGODB_URI;
+export async function connectDB(customUri = null) {
+    const isTest = process.env.NODE_ENV === "test";
+    const uri = customUri || (isTest ? getTestDatabaseUri() : process.env.MONGODB_URI);
 
     if (!uri) {
-        throw new Error("MONGODB_URI is missing from .env");
+        throw new Error(isTest ? "TEST_MONGODB_URI is missing from .env" : "MONGODB_URI is missing from .env");
     }
 
     if (mongoose.connection.readyState === 1) {
+        if (isTest) assertTestDatabaseIsolation(mongoose);
         return mongoose.connection;
     }
 
@@ -21,7 +24,9 @@ export async function connectDB() {
         cached.promise = mongoose.connect(uri, {
             serverSelectionTimeoutMS: 10000,
         }).then((m) => {
-            console.log("MongoDB Atlas connected successfully");
+            if (isTest) {
+                assertTestDatabaseIsolation(m);
+            }
             return m;
         });
     }

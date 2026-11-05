@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Edit Lesson | <%= lesson.title %></title>
+    <link rel="icon" type="image/png" href="/images/EDUviber_LOGO.png">
+    <link rel="apple-touch-icon" href="/images/EDUviber_LOGO.png">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
@@ -77,6 +79,16 @@
                 <p class="text-xs text-gray-500 mt-1">
                     Direct video GUID from Bunny.net Stream video library.
                 </p>
+            </div>
+
+            <div class="border-t pt-5">
+                <label class="block font-medium text-sm mb-2">Free Preview</label>
+                <div class="flex items-center gap-3">
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="isFreePreview" value="true" class="rounded border-gray-300 text-yellow-600 focus:ring-yellow-500 mr-2" <%= values.isFreePreview ? 'checked' : '' %>>
+                        <span class="text-sm font-medium text-gray-700">Allow prospective students to watch this lesson without enrollment</span>
+                    </label>
+                </div>
             </div>
 
             <div class="border-t pt-5">

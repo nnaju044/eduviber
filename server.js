@@ -1,6 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import mongoose from "mongoose";
 import { connectDB } from "./config/db.js";
@@ -13,6 +14,8 @@ import studentRoutes from "./routes/studentRoutes.js";
 import publicRoutes from "./routes/publicRoutes.js";
 import { requireAuth } from "./middleware/requireAuth.js";
 import { csrfProtection } from "./middleware/csrf.js";
+import apiRouter from "./api/routes/index.js";
+import { getTestDatabaseUri } from "./config/testDbGuard.js";
 
 dotenv.config();
 
@@ -52,6 +55,14 @@ app.use(express.urlencoded({ extended: true, limit: "5mb" }));
 app.use(express.json({ limit: "5mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
+const clientDistPath = path.join(__dirname, "client", "dist");
+const clientDistIndex = path.join(clientDistPath, "index.html");
+
+// Serve compiled React SPA static assets if build exists
+if (fs.existsSync(clientDistPath)) {
+    app.use(express.static(clientDistPath));
+}
+
 // Health-check endpoint for load balancers, Vercel, and container orchestrators (no secrets exposed)
 app.get("/health", async (req, res) => {
     try {
@@ -89,7 +100,7 @@ app.use(
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({
-      mongoUrl: process.env.MONGODB_URI,
+      mongoUrl: process.env.NODE_ENV === "test" ? getTestDatabaseUri() : process.env.MONGODB_URI,
       collectionName: "sessions",
       ttl: 60 * 60 * 24,
     }),
@@ -108,6 +119,30 @@ app.use(publicRoutes);
 app.use(authRoutes);
 app.use(studentRoutes);
 app.use("/admin", adminRoutes);
+app.use("/api", apiRouter);
+
+// SPA client routes fallback (serves React application under /app/*, redirects legacy aliases)
+app.use((req, res, next) => {
+  if (req.method !== "GET" && req.method !== "HEAD") return next();
+
+  // Redirect /teacher to canonical /app/teacher, and /student to canonical /app/student
+  if (req.path === "/teacher" || req.path.startsWith("/teacher/")) {
+    const target = req.originalUrl.replace(/^\/teacher/, "/app/teacher");
+    return res.redirect(302, target);
+  }
+  if (req.path === "/student" || req.path.startsWith("/student/")) {
+    const target = req.originalUrl.replace(/^\/student/, "/app/student");
+    return res.redirect(302, target);
+  }
+
+  // Serve React SPA for /app and any /app/* route
+  if (req.path === "/app" || req.path.startsWith("/app/")) {
+    if (fs.existsSync(clientDistIndex)) {
+      return res.sendFile(clientDistIndex);
+    }
+  }
+  next();
+});
 
 // Catch-all 404 handler
 app.use((req, res) => {

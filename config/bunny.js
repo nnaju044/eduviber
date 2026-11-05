@@ -83,3 +83,68 @@ export function createSignedEmbedUrl(videoId, ttlSeconds = 3600) {
 
     return url.toString();
 }
+
+/**
+ * Creates a video entry in Bunny Stream video library
+ */
+export async function createBunnyVideo(title = "Lesson Video") {
+    const { libraryId, apiKey } = getConfig();
+
+    const response = await fetch(
+        `https://video.bunnycdn.com/library/${libraryId}/videos`,
+        {
+            method: "POST",
+            headers: {
+                AccessKey: apiKey,
+                "Content-Type": "application/json",
+                Accept: "application/json",
+            },
+            body: JSON.stringify({ title: String(title).slice(0, 150) }),
+            signal: AbortSignal.timeout(15000),
+        }
+    );
+
+    if (!response.ok) {
+        throw new Error(`Bunny video creation failed (${response.status})`);
+    }
+
+    const data = await response.json();
+    return {
+        videoId: data.guid,
+        title: data.title,
+    };
+}
+
+/**
+ * Uploads video file binary/stream to Bunny Stream
+ */
+export async function uploadBunnyVideo(videoId, bufferOrStream) {
+    if (!/^[0-9a-f-]{36}$/i.test(videoId)) {
+        throw new Error("Invalid Bunny video ID format");
+    }
+
+    const { libraryId, apiKey } = getConfig();
+
+    const response = await fetch(
+        `https://video.bunnycdn.com/library/${libraryId}/videos/${videoId}`,
+        {
+            method: "PUT",
+            headers: {
+                AccessKey: apiKey,
+                "Content-Type": "application/octet-stream",
+            },
+            body: bufferOrStream,
+            duplex: "half",
+            signal: AbortSignal.timeout(60000),
+        }
+    );
+
+    if (!response.ok) {
+        throw new Error(`Bunny video upload failed (${response.status})`);
+    }
+
+    return {
+        success: true,
+        videoId,
+    };
+}
