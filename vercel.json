@@ -8,11 +8,7 @@
   ],
   "functions": {
     "api/index.js": {
-      "includeFiles": [
-        "views/**",
-        "client/dist/**",
-        "public/**"
-      ]
+      "includeFiles": "{views/**,client/dist/**,public/**}"
     }
   }
 }
