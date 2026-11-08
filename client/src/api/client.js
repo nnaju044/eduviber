@@ -87,7 +87,11 @@ export async function apiFetch(endpoint, options = {}) {
   }
 
   if (!response.ok) {
-    const errorMsg = data?.message || data?.error?.message || response.statusText || "Request failed";
+    const errorMsg =
+      data?.message ||
+      (typeof data?.error === "string" ? data.error : data?.error?.message) ||
+      response.statusText ||
+      "Request failed";
     const error = new Error(errorMsg);
     error.status = response.status;
     error.code = data?.code || data?.error?.code || `HTTP_${response.status}`;
