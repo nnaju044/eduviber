@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import Course from "../../models/Course.js";
 import Lesson from "../../models/Lesson.js";
 import User from "../../models/User.js";
+import Enrollment from "../../models/Enrollment.js";
 import { sendApiError, sendApiSuccess } from "../middleware/apiAuth.js";
 
 /**
@@ -40,23 +41,50 @@ export async function listCourses(req, res, next) {
             Course.countDocuments(filter),
         ]);
 
-        const sanitizedCourses = courses.map((c) => ({
-            id: c._id.toString(),
-            title: c.title,
-            slug: c.slug,
-            description: c.description,
-            price: c.price,
-            thumbnail: c.thumbnail,
-            instructor: c.instructor,
-            teacher: c.ownerId
-                ? {
-                    id: c.ownerId._id.toString(),
-                    name: c.ownerId.name,
-                    headline: c.ownerId.teacherProfile?.headline || "",
-                }
-                : null,
-            createdAt: c.createdAt,
-        }));
+        const courseIds = courses.map((c) => c._id);
+        const lessonAggregates = await Lesson.aggregate([
+            { $match: { courseId: { $in: courseIds }, isPublished: true } },
+            {
+                $group: {
+                    _id: "$courseId",
+                    totalLessons: { $sum: 1 },
+                    totalDurationSeconds: { $sum: "$durationSeconds" },
+                },
+            },
+        ]);
+
+        const statsMap = new Map(
+            lessonAggregates.map((item) => [
+                item._id.toString(),
+                {
+                    totalLessons: item.totalLessons || 0,
+                    totalMinutes: Math.round((item.totalDurationSeconds || 0) / 60),
+                },
+            ])
+        );
+
+        const sanitizedCourses = courses.map((c) => {
+            const stats = statsMap.get(c._id.toString()) || { totalLessons: 0, totalMinutes: 0 };
+            return {
+                id: c._id.toString(),
+                title: c.title,
+                slug: c.slug,
+                description: c.description,
+                price: c.price,
+                thumbnail: c.thumbnail,
+                instructor: c.instructor,
+                teacher: c.ownerId
+                    ? {
+                        id: c.ownerId._id.toString(),
+                        name: c.ownerId.name,
+                        headline: c.ownerId.teacherProfile?.headline || "",
+                    }
+                    : null,
+                totalLessons: stats.totalLessons,
+                totalMinutes: stats.totalMinutes,
+                createdAt: c.createdAt,
+            };
+        });
 
         return sendApiSuccess(res, 200, {
             courses: sanitizedCourses,
@@ -78,6 +106,7 @@ export async function listCourses(req, res, next) {
 export async function getCourseDetails(req, res, next) {
     try {
         const { slug } = req.params;
+        const user = req.session?.user || null;
 
         const course = await Course.findOne({ slug, isPublished: true })
             .select("title slug description price thumbnail instructor ownerId createdAt")
@@ -90,19 +119,62 @@ export async function getCourseDetails(req, res, next) {
 
         // Only fetch published lessons; NEVER leak bunnyVideoId or private content
         const lessons = await Lesson.find({ courseId: course._id, isPublished: true })
-            .select("title moduleName order durationMinutes durationSeconds isFreePreview")
+            .select("title description moduleName order durationMinutes durationSeconds isFreePreview")
             .sort({ order: 1 })
             .lean();
 
-        const syllabus = lessons.map((l) => ({
-            id: l._id.toString(),
-            title: l.title,
-            moduleName: l.moduleName || "General",
-            order: l.order,
-            durationMinutes: l.durationMinutes || (l.durationSeconds ? Math.round(l.durationSeconds / 60) : 0),
-            durationSeconds: l.durationSeconds || (l.durationMinutes ? l.durationMinutes * 60 : 0),
-            isFreePreview: Boolean(l.isFreePreview),
+        let totalDurationSeconds = 0;
+        const modulesMap = new Map();
+
+        const syllabus = lessons.map((l) => {
+            const durSeconds = l.durationSeconds || (l.durationMinutes ? l.durationMinutes * 60 : 0);
+            totalDurationSeconds += durSeconds;
+            const item = {
+                id: l._id.toString(),
+                title: l.title,
+                description: l.description || "",
+                moduleName: l.moduleName || "General",
+                order: l.order,
+                durationMinutes: l.durationMinutes || (durSeconds ? Math.round(durSeconds / 60) : 0),
+                durationSeconds: durSeconds,
+                isFreePreview: Boolean(l.isFreePreview),
+            };
+
+            const modName = item.moduleName;
+            if (!modulesMap.has(modName)) {
+                modulesMap.set(modName, []);
+            }
+            modulesMap.get(modName).push(item);
+
+            return item;
+        });
+
+        const modules = Array.from(modulesMap.entries()).map(([name, modLessons], index) => ({
+            name,
+            order: index + 1,
+            lessonCount: modLessons.length,
+            lessons: modLessons,
         }));
+
+        // Check if user is enrolled
+        let isEnrolled = false;
+        if (user) {
+            const enrollment = await Enrollment.findOne({
+                userId: user.id,
+                courseId: course._id,
+                status: "active",
+            }).lean();
+            const isAdmin = user.role === "admin" || user.role === "super_admin";
+            isEnrolled = Boolean(enrollment) || isAdmin;
+        }
+
+        const paymentConfig = {
+            upiId: process.env.PAYMENT_UPI_ID || "payments@eduviber.bank",
+            accountName: process.env.PAYMENT_ACCOUNT_NAME || "EDUviber",
+            bankName: process.env.PAYMENT_BANK_NAME || "HDFC Bank",
+            accountNumber: process.env.PAYMENT_ACCOUNT_NUMBER || "50200012345678",
+            ifscCode: process.env.PAYMENT_IFSC_CODE || "HDFC0000128",
+        };
 
         return sendApiSuccess(res, 200, {
             course: {
@@ -121,9 +193,14 @@ export async function getCourseDetails(req, res, next) {
                         bio: course.ownerId.teacherProfile?.bio || "",
                     }
                     : null,
+                totalLessons: lessons.length,
+                totalMinutes: Math.round(totalDurationSeconds / 60),
+                isEnrolled,
                 createdAt: course.createdAt,
             },
+            modules,
             syllabus,
+            paymentConfig,
         });
     } catch (error) {
         next(error);

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useParams, useSearchParams, useNavigate, Link } from "react-router-dom";
 import { studentApi } from "../../api/studentApi.js";
 import LoadingSpinner from "../../components/LoadingSpinner.jsx";
@@ -11,6 +11,7 @@ import LearningProgressIndicator from "../../components/student/LearningProgress
 import CourseCurriculum from "../../components/student/CourseCurriculum.jsx";
 import LessonControls from "../../components/student/LessonControls.jsx";
 import CourseCompletionSummary from "../../components/student/CourseCompletionSummary.jsx";
+import StudentAssignmentSection from "../../components/student/StudentAssignmentSection.jsx";
 
 /**
  * CourseLearningPage
@@ -140,17 +141,24 @@ export default function CourseLearningPage() {
   }, [courseData, effectiveLessonIdFromUrl, canonicalLessonId, legacyLessonId, searchParams, setSearchParams]);
 
   // 3. Verify access and load playback token whenever activeLessonId changes
-  const loadLessonPlayback = useCallback(async (targetId) => {
+  const authorizedLessonIdRef = useRef(null);
+
+  const loadLessonPlayback = useCallback(async (targetId, force = false) => {
     if (!courseId || !targetId) return;
+    if (!force && authorizedLessonIdRef.current === targetId && activeLessonPlaybackData) {
+      return; // Already authorized for this lesson; do not re-request on progress saves or state updates
+    }
 
     setPlaybackLoading(true);
     setPlaybackError(null);
 
     try {
       const data = await studentApi.getLessonPlayback(courseId, targetId);
+      authorizedLessonIdRef.current = targetId;
       setActiveLessonPlaybackData(data);
       setPlaybackError(null);
     } catch (err) {
+      authorizedLessonIdRef.current = null;
       setActiveLessonPlaybackData(null);
       setPlaybackError({
         message: err.message || "Active enrollment required to watch this lesson.",
@@ -160,7 +168,7 @@ export default function CourseLearningPage() {
     } finally {
       setPlaybackLoading(false);
     }
-  }, [courseId]);
+  }, [courseId, activeLessonPlaybackData]);
 
   useEffect(() => {
     if (!courseData?.syllabus || !activeLessonId) return;
@@ -168,7 +176,10 @@ export default function CourseLearningPage() {
     const targetLesson = courseData.syllabus.find((l) => l.id === activeLessonId);
     if (!targetLesson) return;
 
-    loadLessonPlayback(targetLesson.id);
+    // Only load playback if lesson has changed or not yet loaded
+    if (authorizedLessonIdRef.current !== targetLesson.id) {
+      loadLessonPlayback(targetLesson.id);
+    }
   }, [courseData?.syllabus, activeLessonId, loadLessonPlayback]);
 
   // Handle live progress updates from player
@@ -216,7 +227,7 @@ export default function CourseLearningPage() {
     // Re-sync course details to ensure chapter completion counters and stats match backend
     studentApi.getEnrolledCourse(courseId).then((data) => {
       if (data) setCourseData(data);
-    }).catch(() => {});
+    }).catch(() => { });
   }, [courseId]);
 
   // Handle lesson selection from curriculum or controls
@@ -292,8 +303,8 @@ export default function CourseLearningPage() {
                 {error.status === 403
                   ? "Enrollment Required"
                   : error.status === 404
-                  ? "Course Not Found"
-                  : "Unable to Load Course"}
+                    ? "Course Not Found"
+                    : "Unable to Load Course"}
               </h1>
               <p className="text-xs text-neutral-600 mt-1 leading-relaxed">
                 {error.message}
@@ -326,7 +337,7 @@ export default function CourseLearningPage() {
                   error={playbackError}
                   onProgressSaved={handleProgressSaved}
                   onLessonCompleted={handleLessonCompleted}
-                  onRetryPlayback={() => loadLessonPlayback(activeLessonId)}
+                  onRetryPlayback={() => loadLessonPlayback(activeLessonId, true)}
                 />
 
                 {/* 3 & 4. Current lesson title, chapter and metadata */}
@@ -337,6 +348,13 @@ export default function CourseLearningPage() {
 
                 {/* 6. Available Lesson Resources */}
                 <LessonResources resources={currentLesson?.resources || []} />
+
+                {/* 6.5 Course & Lesson Homework / Assignments */}
+                <StudentAssignmentSection
+                  courseId={courseId}
+                  activeLessonId={activeLessonId}
+                  currentModuleName={currentLesson?.moduleName}
+                />
 
                 {/* 7. Learning progress information */}
                 <LearningProgressIndicator stats={courseData.stats} />

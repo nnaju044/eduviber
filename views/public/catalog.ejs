@@ -4,141 +4,184 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Course Catalogue | EDUviber</title>
+    <title>Course Catalog | EDUviber</title>
     <link rel="icon" type="image/png" href="/images/EDUviber_LOGO.png">
     <link rel="apple-touch-icon" href="/images/EDUviber_LOGO.png">
-    <meta name="description" content="Explore our library of published professional courses. Step-by-step curriculum with practical video modules.">
+    <meta name="description"
+        content="Explore published professional digital courses on EDUviber. High-impact curriculum with practical video modules.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ["'Plus Jakarta Sans'", "sans-serif"],
+                    },
+                    colors: {
+                        gold: "#CA8A04",
+                        goldHover: "#A16207",
+                    }
+                }
+            }
+        }
+    </script>
 </head>
 
-<body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col antialiased">
+<body
+    class="bg-[#FAFAFA] text-neutral-900 min-h-screen flex flex-col font-sans antialiased selection:bg-[#CA8A04] selection:text-white">
     <!-- Navigation Bar -->
-    <header class="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-xs">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-            <a href="/" class="font-bold text-2xl tracking-tight text-gray-900 flex items-center gap-1">
-                EDUviber<span class="text-yellow-600">.</span>
+    <header class="bg-white/90 backdrop-blur-md border-b border-neutral-200 sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <a href="/app" class="font-black text-2xl tracking-tight text-black flex items-center gap-1 select-none">
+                EDU<span class="text-[#CA8A04]">viber</span>
             </a>
 
-            <nav class="flex items-center gap-4 sm:gap-6">
-                <a href="/courses" class="text-sm font-semibold text-yellow-700">
-                    All Courses
+            <nav class="flex items-center gap-4 sm:gap-6 text-sm font-semibold">
+                <a href="/app" class="text-neutral-600 hover:text-black transition">
+                    Home
+                </a>
+                <a href="/courses" class="text-black font-bold border-b-2 border-[#CA8A04] pb-0.5">
+                    Courses
                 </a>
 
                 <% if (user) { %>
-                    <a href="<%= user.role === 'admin' ? '/admin' : '/dashboard' %>"
-                        class="inline-flex items-center gap-2 bg-gray-900 hover:bg-black text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors shadow-xs">
+                    <a href="<%= user.role === 'admin' || user.role === 'super_admin' ? '/app/admin' : user.role === 'teacher' ? '/app/teacher' : '/app/student' %>"
+                        class="inline-flex items-center gap-2 bg-black hover:bg-neutral-800 text-white text-xs font-bold px-4 py-2 rounded-xl transition shadow-sm min-h-[40px]">
                         <span>Dashboard</span>
-                        <span class="text-xs text-yellow-400">→</span>
+                        <span>→</span>
                     </a>
-                <% } else { %>
-                    <a href="/login"
-                        class="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors">
-                        Sign In
-                    </a>
-                <% } %>
+                    <% } else { %>
+                        <a href="/app/login"
+                            class="inline-flex items-center text-xs font-bold text-black border border-neutral-300 hover:bg-neutral-50 px-4 py-2 rounded-xl transition min-h-[40px]">
+                            Sign In
+                        </a>
+                        <% } %>
             </nav>
         </div>
     </header>
 
-    <main class="max-w-6xl mx-auto px-4 sm:px-6 py-12 flex-1 w-full">
-        <div class="mb-10">
-            <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-gray-900">
-                Course Catalogue
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 flex-1 w-full">
+        <div class="mb-10 max-w-2xl">
+            <div
+                class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#CA8A04]/10 text-[#CA8A04] text-xs font-bold mb-3">
+                ✦ Verified Curriculums
+            </div>
+            <h1 class="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-neutral-900">
+                Course Catalog
             </h1>
-            <p class="text-gray-500 mt-2 text-base max-w-xl">
-                Browse our verified, published curriculums. Every course features structured lessons, high-definition streaming, and progress tracking.
+            <p class="text-neutral-600 mt-3 text-base leading-relaxed">
+                Explore structured digital programs taught by verified instructors with progressive lesson unlocking and
+                practical exercises.
             </p>
         </div>
 
-        <% if (courses.length === 0) { %>
-            <div class="bg-white border border-gray-200 rounded-2xl p-16 text-center max-w-md mx-auto shadow-xs my-12">
-                <div class="w-16 h-16 bg-yellow-50 text-yellow-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-                            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
+        <% if (courses.length===0) { %>
+            <div
+                class="bg-white border border-neutral-200 rounded-3xl p-16 text-center max-w-md mx-auto shadow-sm my-12">
+                <div
+                    class="w-14 h-14 bg-neutral-100 text-[#CA8A04] rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+                    ✦
                 </div>
-                <h2 class="text-xl font-bold text-gray-900">No Courses Available Yet</h2>
-                <p class="text-gray-500 mt-2 text-sm leading-relaxed">
-                    Check back soon as new lessons and programs are being actively finalized.
+                <h2 class="text-xl font-bold text-neutral-900">No Courses Published Yet</h2>
+                <p class="text-neutral-500 mt-2 text-sm leading-relaxed">
+                    New curriculum programs are actively being created and prepared for publication.
                 </p>
-                <a href="/" class="inline-block mt-6 text-sm font-medium text-yellow-700 hover:text-yellow-800">
+                <a href="/app"
+                    class="inline-block mt-6 px-5 py-2.5 rounded-xl bg-black text-white text-xs font-bold hover:bg-neutral-800 transition">
                     ← Return to Home
                 </a>
             </div>
-        <% } else { %>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <% courses.forEach(course => { %>
-                    <article class="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-xs hover:border-gray-300 hover:shadow-md transition-all flex flex-col justify-between">
-                        <!-- Course Banner -->
-                        <div class="relative w-full h-48 bg-gradient-to-br from-gray-900 via-gray-800 to-yellow-950 overflow-hidden">
-                            <% if (course.thumbnail) { %>
-                                <img src="<%= course.thumbnail %>" alt="<%= course.title %>"
-                                    class="w-full h-full object-cover"
-                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                <div class="hidden w-full h-full items-center justify-center p-6 text-white text-center">
-                                    <p class="text-lg font-bold"><%= course.title %></p>
-                                </div>
-                            <% } else { %>
-                                <div class="w-full h-full flex flex-col items-center justify-center p-6 text-white text-center">
-                                    <span class="text-2xl font-extrabold text-yellow-500">EDUviber.</span>
-                                    <p class="text-base font-semibold mt-1 px-4 line-clamp-2"><%= course.title %></p>
-                                </div>
-                            <% } %>
+            <% } else { %>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <% courses.forEach(course=> { %>
+                        <article
+                            class="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm hover:border-black hover:shadow-md transition-all flex flex-col justify-between group">
+                            <!-- Course Thumbnail / Placeholder -->
+                            <div class="relative w-full h-48 bg-neutral-900 overflow-hidden">
+                                <% if (course.thumbnail) { %>
+                                    <img src="<%= course.thumbnail %>" alt="<%= course.title %>"
+                                        class="w-full h-full object-cover transition-transform group-hover:scale-105 duration-200"
+                                        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div
+                                        class="hidden w-full h-full items-center justify-center p-6 text-white text-center">
+                                        <p class="text-base font-bold">
+                                            <%= course.title %>
+                                        </p>
+                                    </div>
+                                    <% } else { %>
+                                        <div
+                                            class="w-full h-full flex flex-col items-center justify-center p-6 text-white text-center">
+                                            <span class="text-xl font-black text-[#CA8A04]">EDUviber</span>
+                                            <p class="text-sm font-semibold mt-1 px-4 line-clamp-2 text-neutral-200">
+                                                <%= course.title %>
+                                            </p>
+                                        </div>
+                                        <% } %>
 
-                            <div class="absolute bottom-3 right-3 bg-black/75 backdrop-blur-xs text-white text-xs px-2.5 py-1 rounded-md font-medium">
-                                <%= course.lessonCount %> <%= course.lessonCount === 1 ? 'lesson' : 'lessons' %>
-                                <% if (course.totalMinutes > 0) { %> • <%= course.totalMinutes %>m<% } %>
-                            </div>
-                        </div>
-
-                        <!-- Course Info -->
-                        <div class="p-6 flex-1 flex flex-col justify-between">
-                            <div>
-                                <% if (course.instructor) { %>
-                                    <p class="text-xs font-medium text-yellow-700 uppercase tracking-wider mb-1">
-                                        Instructor: <%= course.instructor %>
-                                    </p>
-                                <% } %>
-
-                                <h2 class="text-xl font-bold text-gray-900 leading-snug">
-                                    <a href="/courses/<%= course.slug %>" class="hover:underline">
-                                        <%= course.title %>
-                                    </a>
-                                </h2>
-
-                                <p class="text-sm text-gray-600 mt-2 line-clamp-3 leading-relaxed">
-                                    <%= course.description %>
-                                </p>
+                                            <div
+                                                class="absolute bottom-3 right-3 bg-black/85 backdrop-blur-sm text-white text-[11px] px-2.5 py-1 rounded-lg font-bold">
+                                                <%= course.lessonCount %>
+                                                    <%= course.lessonCount===1 ? 'lesson' : 'lessons' %>
+                                                        <% if (course.totalMinutes> 0) { %> • <%= course.totalMinutes %>
+                                                                m<% } %>
+                                            </div>
                             </div>
 
-                            <div class="mt-6 pt-5 border-t border-gray-100 flex items-center justify-between">
+                            <!-- Course Info Body -->
+                            <div class="p-6 flex-1 flex flex-col justify-between space-y-4">
                                 <div>
-                                    <span class="text-xs text-gray-400 block font-medium">Price</span>
-                                    <span class="text-2xl font-bold text-gray-900">
-                                        ₹<%= course.price.toLocaleString("en-IN") %>
-                                    </span>
+                                    <% if (course.instructor) { %>
+                                        <p class="text-xs font-bold text-[#CA8A04] uppercase tracking-wider mb-1">
+                                            <%= course.instructor %>
+                                        </p>
+                                        <% } %>
+
+                                            <h2
+                                                class="text-lg font-bold text-neutral-900 leading-snug group-hover:text-black">
+                                                <a href="/courses/<%= course.slug %>" class="hover:underline">
+                                                    <%= course.title %>
+                                                </a>
+                                            </h2>
+
+                                            <p
+                                                class="text-xs text-neutral-600 mt-2 line-clamp-3 leading-relaxed font-medium">
+                                                <%= course.description %>
+                                            </p>
                                 </div>
 
-                                <a href="/courses/<%= course.slug %>"
-                                    class="bg-gray-900 hover:bg-black text-white text-sm font-medium px-5 py-2.5 rounded-xl transition-colors shadow-xs">
-                                    View Syllabus →
-                                </a>
+                                <div class="pt-4 border-t border-neutral-100 flex items-center justify-between">
+                                    <div>
+                                        <span
+                                            class="text-[10px] uppercase font-bold text-neutral-400 block tracking-wider">Tuition</span>
+                                        <span class="text-xl font-black text-neutral-900">
+                                            ₹<%= course.price.toLocaleString("en-IN") %>
+                                        </span>
+                                    </div>
+
+                                    <a href="/courses/<%= course.slug %>"
+                                        class="bg-black hover:bg-neutral-800 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow-sm min-h-[40px] flex items-center justify-center">
+                                        View Syllabus →
+                                    </a>
+                                </div>
                             </div>
-                        </div>
-                    </article>
-                <% }) %>
-            </div>
-        <% } %>
+                        </article>
+                        <% }) %>
+                </div>
+                <% } %>
     </main>
 
     <!-- Footer -->
-    <footer class="bg-white border-t border-gray-200 py-8 mt-12">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-500">
+    <footer class="bg-white border-t border-neutral-200 py-6 mt-12 text-xs text-neutral-500">
+        <div
+            class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
             <p>© <%= new Date().getFullYear() %> EDUviber. All rights reserved.</p>
-            <div class="flex items-center gap-6">
-                <a href="/" class="hover:text-gray-900 transition-colors">Home</a>
-                <a href="/login" class="hover:text-gray-900 transition-colors">Sign In</a>
+            <div class="flex items-center gap-5 font-semibold text-neutral-600">
+                <a href="/app" class="hover:text-black transition">Home</a>
+                <a href="/app/login" class="hover:text-black transition">Sign In</a>
             </div>
         </div>
     </footer>

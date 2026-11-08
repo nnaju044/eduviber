@@ -1,23 +1,23 @@
 import crypto from "crypto";
 import User from "../models/User.js";
 import bcrypt from "bcryptjs";
-import { sendPasswordResetEmail } from "../services/emailService.js";
+import { sendPasswordResetEmail, sendPasswordResetSuccessEmail } from "../services/emailService.js";
 import { loginRateLimiter } from "../middleware/rateLimiter.js";
+import { invalidateAllUserSessions } from "../services/sessionSecurityService.js";
+import { revokeAllStudentDevices } from "../services/deviceService.js";
 
 export function showLogin(req, res) {
     if (req.session.user) {
         const isAdmin = req.session.user.role === "admin" || req.session.user.role === "super_admin";
+        const isTeacher = req.session.user.role === "teacher";
         return res.redirect(
-            isAdmin ? "/admin" : "/dashboard"
+            isAdmin ? "/app/admin" : isTeacher ? "/app/teacher" : "/app/student"
         );
     }
 
-    const message =
-        req.query.reset === "success"
-            ? "Your password has been reset successfully. Please sign in with your new password."
-            : null;
-
-    res.render("auth/login", { error: null, message });
+    // Redirect legacy /login to canonical React /app/login, preserving query string
+    const queryString = req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "";
+    return res.redirect(302, `/app/login${queryString}`);
 }
 
 export async function login(req, res, next) {
@@ -304,17 +304,28 @@ export async function resetPassword(req, res, next) {
         user.mustChangePassword = false;
         await user.save();
 
-        // Invalidate or renew existing session to prevent session fixation / stale state
+        // 1. Invalidate every active session belonging to this student across all browsers
+        await invalidateAllUserSessions(user._id);
+
+        // 2. Revoke all registered streaming devices
+        await revokeAllStudentDevices(user._id, res);
+
+        // 3. Clear session cookie & destroy current session
         if (req.session) {
             await new Promise((resolve) => req.session.destroy(() => resolve()));
-            res.clearCookie("course.sid", {
-                httpOnly: true,
-                sameSite: "lax",
-                secure: process.env.NODE_ENV === "production",
-            });
         }
+        res.clearCookie("course.sid", {
+            httpOnly: true,
+            sameSite: "lax",
+            secure: process.env.NODE_ENV === "production",
+        });
 
-        res.redirect("/login?reset=success");
+        // 4. Dispatch security confirmation email
+        sendPasswordResetSuccessEmail({ user }).catch((err) => {
+            console.error("[ResetPassword] Error dispatching security email:", err.message);
+        });
+
+        res.redirect("/app/login?reset=success");
     } catch (error) {
         next(error);
     }

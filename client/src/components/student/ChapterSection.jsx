@@ -18,6 +18,7 @@ export default function ChapterSection({
   const completed = module.lessons.filter((l) => l.progress?.completed).length;
   const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
   const hasActiveLesson = module.lessons.some((l) => l.id === activeLessonId);
+  const isModuleLocked = module.lessons.length > 0 && module.lessons.every((l) => l.isModuleUnlocked === false);
 
   return (
     <div className="bg-white border-b border-neutral-200 last:border-b-0">
@@ -37,6 +38,11 @@ export default function ChapterSection({
             <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
               Chapter
             </span>
+            {isModuleLocked && (
+              <span className="text-neutral-500 text-[10px] font-medium px-1.5 py-0.2 bg-neutral-200 rounded border border-neutral-300">
+                🔒 Module Locked
+              </span>
+            )}
             {completed === total && total > 0 && (
               <span className="text-emerald-600 text-[10px] font-bold px-1.5 py-0.2 bg-emerald-50 rounded border border-emerald-200">
                 Completed

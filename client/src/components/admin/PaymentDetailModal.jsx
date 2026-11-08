@@ -239,7 +239,9 @@ export default function PaymentDetailModal({
                   </div>
                   <div>
                     <p className="text-slate-400">Platform Share</p>
-                    <p className="font-bold text-amber-400">₹{payment.financialSnapshot.platformShare}</p>
+                    <p className="font-bold text-amber-400">
+                      ₹{payment.financialSnapshot.platformCommission ?? payment.financialSnapshot.platformShare ?? 0}
+                    </p>
                   </div>
                   <div>
                     <p className="text-slate-400">Teacher Share</p>

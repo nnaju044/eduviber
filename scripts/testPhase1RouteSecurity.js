@@ -213,15 +213,18 @@ async function runRouteSecurityTests() {
         testCourses.push(testCourse._id);
 
         // ----------------------------------------------------------------------
-        // TEST 1: GET /login works without pre-existing CSRF token & renders form with _csrf
+        // TEST 1: GET /login redirects to canonical /app/login; CSRF token generated for session
         // ----------------------------------------------------------------------
         const getLoginRes = await requestWithSession(server, { path: "/login", method: "GET" });
-        assert.equal(getLoginRes.status, 200, "GET /login must return HTTP 200");
+        assert.equal(getLoginRes.status, 302, "GET /login must redirect to canonical /app/login");
+        assert.equal(getLoginRes.headers.location, "/app/login", "GET /login must redirect to /app/login");
         assert.ok(getLoginRes.cookie, "GET /login must set session cookie");
-        const csrfToken = extractCsrfToken(getLoginRes.body);
-        assert.ok(csrfToken && csrfToken.length > 20, "GET /login must render hidden _csrf input with valid token");
-        assert.ok(!getLoginRes.body.includes("Invalid or missing CSRF token"), "GET /login must not show CSRF error");
-        console.log("✓ TEST 1 PASSED: GET /login returns HTTP 200, sets session cookie, and renders valid hidden CSRF token.");
+
+        // Obtain CSRF token using the same session from an active EJS form (forgot-password)
+        const getForgotRes = await requestWithSession(server, { path: "/forgot-password", method: "GET" }, null, getLoginRes.cookie);
+        const csrfToken = extractCsrfToken(getForgotRes.body);
+        assert.ok(csrfToken && csrfToken.length > 20, "Session must render valid hidden CSRF token");
+        console.log("✓ TEST 1 PASSED: GET /login returns HTTP 302 redirect to canonical /app/login, sets session cookie, and provides valid CSRF token.");
 
         // ----------------------------------------------------------------------
         // TEST 2: POST /login without CSRF token is rejected with HTTP 403 (renders 403, not 404)
@@ -253,24 +256,24 @@ async function runRouteSecurityTests() {
         console.log("✓ TEST 3 PASSED: POST /login with valid CSRF token authenticates student and redirects.");
 
         // Authenticate Teacher session
-        const getTeacherLoginRes = await requestWithSession(server, { path: "/login", method: "GET" });
-        const teacherCsrf = extractCsrfToken(getTeacherLoginRes.body);
+        const getTeacherForgotRes = await requestWithSession(server, { path: "/forgot-password", method: "GET" });
+        const teacherCsrf = extractCsrfToken(getTeacherForgotRes.body);
         const postTeacherLogin = await requestWithSession(
             server,
             { path: "/login", method: "POST" },
             { email: teacherUser.email, password: passwordPlain, _csrf: teacherCsrf },
-            getTeacherLoginRes.cookie
+            getTeacherForgotRes.cookie
         );
         const teacherCookie = postTeacherLogin.cookie;
 
         // Authenticate Super Admin session
-        const getAdminLoginRes = await requestWithSession(server, { path: "/login", method: "GET" });
-        const adminCsrf = extractCsrfToken(getAdminLoginRes.body);
+        const getAdminForgotRes = await requestWithSession(server, { path: "/forgot-password", method: "GET" });
+        const adminCsrf = extractCsrfToken(getAdminForgotRes.body);
         const postAdminLogin = await requestWithSession(
             server,
             { path: "/login", method: "POST" },
             { email: superAdminUser.email, password: passwordPlain, _csrf: adminCsrf },
-            getAdminLoginRes.cookie
+            getAdminForgotRes.cookie
         );
         assert.equal(postAdminLogin.status, 302);
         assert.equal(postAdminLogin.headers.location, "/admin");

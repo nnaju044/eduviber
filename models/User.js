@@ -75,6 +75,25 @@ const userSchema = new mongoose.Schema(
         resetPasswordExpires: {
             type: Date,
         },
+        // E13: Profile avatar cache-busting version (avoids storing full URL)
+        avatarVersion: {
+            type: Number,
+            default: 0,
+        },
+        // E13: Email verification workflow fields
+        pendingEmail: {
+            type: String,
+            lowercase: true,
+            trim: true,
+            default: null,
+        },
+        emailVerifyTokenHash: {
+            type: String,
+            select: false,
+        },
+        emailVerifyExpires: {
+            type: Date,
+        },
     },
     { timestamps: true }
 );

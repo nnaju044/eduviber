@@ -22,9 +22,17 @@ export default class ErrorBoundary extends React.Component {
             ✕
           </div>
           <h2 className="text-xl font-bold text-slate-100 mb-2">Something went wrong</h2>
-          <p className="text-sm text-slate-400 max-w-md mb-6">
+          <p className="text-sm text-slate-400 max-w-md mb-2">
             An unexpected error occurred in the React application. You can reload the page or return to the homepage.
           </p>
+          {this.state.error && (
+            <div className="p-3 mb-6 bg-rose-950/40 border border-rose-800/40 rounded text-rose-300 font-mono text-xs max-w-xl text-left overflow-auto max-h-40">
+              <p className="font-bold">{this.state.error.name}: {this.state.error.message}</p>
+              {this.state.error.stack && (
+                <pre className="mt-1 text-[10px] whitespace-pre-wrap opacity-80">{this.state.error.stack}</pre>
+              )}
+            </div>
+          )}
           <div className="flex gap-3">
             <button
               onClick={() => window.location.reload()}

@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import crypto from "crypto";
 import User from "../../models/User.js";
 import Course from "../../models/Course.js";
 import Lesson from "../../models/Lesson.js";
@@ -6,22 +7,38 @@ import Enrollment from "../../models/Enrollment.js";
 import Progress from "../../models/Progress.js";
 import Payment from "../../models/Payment.js";
 import Device from "../../models/Device.js";
+import cloudinary, { getCloudinaryClient, isCloudinaryConfigured, getStudentAvatarPublicId, getStudentAvatarUrl } from "../../config/cloudinary.js";
 import { createSignedEmbedUrl, verifyBunnyVideo } from "../../config/bunny.js";
-import { sendPaymentSubmittedEmail } from "../../services/emailService.js";
+import {
+    sendPaymentSubmittedEmail,
+    sendEmailChangeVerificationEmail,
+    sendEmailAddressChangedNotice,
+    sendDeviceRevokedEmail,
+} from "../../services/emailService.js";
 import { validatePaymentProof } from "../../controllers/publicController.js";
 import { sendApiError, sendApiSuccess } from "../middleware/apiAuth.js";
 import { authenticateDevice } from "../../services/deviceService.js";
 import { mergeIntervals, calculateUniqueSeconds, isFullCoverage } from "../../services/intervalService.js";
+import { computeEffectiveAccess, assertStudentLessonAccess, assertStudentAssignmentAccess } from "../../services/contentAccessService.js";
+import Assignment from "../../models/Assignment.js";
+import AssignmentSubmission from "../../models/AssignmentSubmission.js";
+import Notification from "../../models/Notification.js";
+import { validateGoogleDriveLinks } from "../../utils/googleDriveValidator.js";
+import { notifyTeacherOnSubmission } from "../../services/notificationService.js";
 
 /**
- * Get authenticated student's own profile
+ * Get authenticated student's own profile (F01)
  */
 export async function getProfile(req, res, next) {
     try {
-        const user = await User.findById(req.session.user.id).select("name email phone role isActive createdAt").lean();
+        const user = await User.findById(req.session.user.id)
+            .select("name email phone role isActive createdAt avatarVersion pendingEmail")
+            .lean();
         if (!user) {
             return sendApiError(res, 404, "User not found.", "NOT_FOUND");
         }
+
+        const profilePictureUrl = getStudentAvatarUrl(user._id, user.avatarVersion);
 
         return sendApiSuccess(res, 200, {
             profile: {
@@ -31,6 +48,9 @@ export async function getProfile(req, res, next) {
                 phone: user.phone || "",
                 role: user.role === "admin" ? "super_admin" : user.role,
                 joinedAt: user.createdAt,
+                profilePictureUrl,
+                avatarVersion: user.avatarVersion || 0,
+                pendingEmail: user.pendingEmail || null,
             },
         });
     } catch (error) {
@@ -39,7 +59,7 @@ export async function getProfile(req, res, next) {
 }
 
 /**
- * Update authenticated student's permitted profile fields
+ * Update authenticated student's permitted profile fields (F01)
  */
 export async function updateProfile(req, res, next) {
     try {
@@ -49,16 +69,32 @@ export async function updateProfile(req, res, next) {
             return sendApiError(res, 404, "User not found.", "NOT_FOUND");
         }
 
-        if (name && typeof name === "string" && name.trim().length >= 2) {
-            user.name = name.trim();
+        if (name !== undefined) {
+            const trimmedName = String(name).trim();
+            if (trimmedName.length < 2) {
+                return sendApiError(res, 400, "Full name must be at least 2 characters long.", "NAME_TOO_SHORT");
+            }
+            if (trimmedName.length > 70) {
+                return sendApiError(res, 400, "Full name must not exceed 70 characters.", "NAME_TOO_LONG");
+            }
+            user.name = trimmedName;
         }
+
         if (phone !== undefined) {
-            user.phone = String(phone).trim();
+            const trimmedPhone = String(phone).trim();
+            // Allow standard domestic or international numbers (between 7 and 18 digits/plus symbols)
+            const phoneRegex = /^[+]?[\d\s-]{7,18}$/;
+            if (trimmedPhone && !phoneRegex.test(trimmedPhone)) {
+                return sendApiError(res, 400, "Please enter a valid phone number (e.g. +91 9876543210).", "INVALID_PHONE");
+            }
+            user.phone = trimmedPhone;
         }
 
         await user.save();
         req.session.user.name = user.name;
         await new Promise((resolve) => req.session.save(resolve));
+
+        const profilePictureUrl = getStudentAvatarUrl(user._id, user.avatarVersion);
 
         return sendApiSuccess(res, 200, {
             profile: {
@@ -66,12 +102,307 @@ export async function updateProfile(req, res, next) {
                 name: user.name,
                 email: user.email,
                 phone: user.phone,
+                role: user.role === "admin" ? "super_admin" : user.role,
+                joinedAt: user.createdAt,
+                profilePictureUrl,
+                avatarVersion: user.avatarVersion || 0,
+                pendingEmail: user.pendingEmail || null,
             },
         }, "Profile updated successfully");
     } catch (error) {
         next(error);
     }
 }
+
+/**
+ * Upload or replace student avatar using deterministic Cloudinary public ID (F01)
+ */
+export async function uploadAvatar(req, res, next) {
+    try {
+        const userId = req.session.user.id;
+        const user = await User.findById(userId);
+        if (!user) {
+            return sendApiError(res, 404, "User not found.", "NOT_FOUND");
+        }
+
+        // Check if file provided in multipart/form-data or Base64 payload
+        let buffer = null;
+        let mimeType = "";
+
+        if (req.file && req.file.buffer) {
+            buffer = req.file.buffer;
+            mimeType = req.file.mimetype;
+        } else if (req.body?.image) {
+            const raw = String(req.body.image);
+            const matches = raw.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
+            if (matches) {
+                mimeType = matches[1];
+                buffer = Buffer.from(matches[2], "base64");
+            }
+        }
+
+        if (!buffer) {
+            return sendApiError(res, 400, "No valid image file uploaded. Please upload a JPEG, PNG, or WebP image.", "MISSING_IMAGE");
+        }
+
+        // Validate allowed MIME types
+        const allowedMimes = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
+        if (mimeType && !allowedMimes.includes(mimeType.toLowerCase())) {
+            return sendApiError(res, 400, "Unsupported image type. Only JPEG, PNG, and WebP are allowed.", "INVALID_MIME_TYPE");
+        }
+
+        // Validate actual magic bytes (file signature) to prevent polyglot / spoofed files
+        const isPng = buffer.length >= 8 && buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47;
+        const isJpg = buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+        const isWebp = buffer.length >= 12 && buffer.toString("ascii", 0, 4) === "RIFF" && buffer.toString("ascii", 8, 12) === "WEBP";
+
+        if (!isPng && !isJpg && !isWebp) {
+            return sendApiError(res, 400, "Invalid image file signature. File content is not a valid JPEG, PNG, or WebP image.", "INVALID_IMAGE_SIGNATURE");
+        }
+
+        // Validate max size: 4MB (strictly below Vercel's 4.5 MB request body limit)
+        if (buffer.length > 4 * 1024 * 1024) {
+            return sendApiError(res, 400, "Image size exceeds 4 MB limit.", "FILE_TOO_LARGE");
+        }
+
+        const deterministicPublicId = getStudentAvatarPublicId(userId);
+
+        // Upload to Cloudinary using deterministic public ID and overwrite: true
+        let uploadResult = null;
+        if (process.env.NODE_ENV === "test" && !isCloudinaryConfigured()) {
+            // Mocked upload for test mode without external network dependency
+            uploadResult = {
+                public_id: deterministicPublicId,
+                version: Date.now(),
+            };
+        } else {
+            if (!isCloudinaryConfigured()) {
+                return sendApiError(res, 503, "Profile picture storage service is currently unconfigured. Please contact support.", "CLOUDINARY_UNCONFIGURED");
+            }
+
+            const client = getCloudinaryClient();
+            uploadResult = await new Promise((resolve, reject) => {
+                const uploadStream = client.uploader.upload_stream(
+                    {
+                        public_id: deterministicPublicId,
+                        overwrite: true,
+                        invalidate: true,
+                        resource_type: "image",
+                        transformation: [{ width: 300, height: 300, crop: "fill", gravity: "face" }],
+                    },
+                    (err, result) => {
+                        if (err) return reject(err);
+                        resolve(result);
+                    }
+                );
+                uploadStream.end(buffer);
+            });
+        }
+
+        // Update avatar version for cache-busting
+        const newVersion = uploadResult.version || Date.now();
+        user.avatarVersion = newVersion;
+        await user.save();
+
+        const profilePictureUrl = getStudentAvatarUrl(user._id, newVersion);
+
+        return sendApiSuccess(res, 200, {
+            profilePictureUrl,
+            avatarVersion: newVersion,
+        }, "Profile picture uploaded successfully");
+    } catch (error) {
+        console.error("[AvatarUpload] Error uploading avatar:", error.message);
+        return sendApiError(res, 500, "Failed to upload profile picture. Please try again.", "UPLOAD_FAILED");
+    }
+}
+
+/**
+ * Remove student avatar (F01)
+ */
+export async function deleteAvatar(req, res, next) {
+    try {
+        const userId = req.session.user.id;
+        const user = await User.findById(userId);
+        if (!user) {
+            return sendApiError(res, 404, "User not found.", "NOT_FOUND");
+        }
+
+        if (user.avatarVersion > 0) {
+            const deterministicPublicId = getStudentAvatarPublicId(userId);
+            try {
+                if (isCloudinaryConfigured()) {
+                    const client = getCloudinaryClient();
+                    await client.uploader.destroy(deterministicPublicId);
+                }
+            } catch (cloudErr) {
+                console.warn("[AvatarDelete] Warning destroying Cloudinary asset:", cloudErr.message);
+            }
+
+            user.avatarVersion = 0;
+            await user.save();
+        }
+
+        return sendApiSuccess(res, 200, {
+            profilePictureUrl: null,
+            avatarVersion: 0,
+        }, "Profile picture removed successfully");
+    } catch (error) {
+        next(error);
+    }
+}
+
+/**
+ * Request email change: sends single-use verification token to proposed new email (F01)
+ */
+export async function requestEmailChange(req, res, next) {
+    try {
+        const userId = req.session.user.id;
+        const newEmail = String(req.body.newEmail || "").trim().toLowerCase();
+
+        if (!newEmail || !newEmail.includes("@") || newEmail.length < 5) {
+            return sendApiError(res, 400, "Please provide a valid email address.", "INVALID_EMAIL");
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return sendApiError(res, 404, "User not found.", "NOT_FOUND");
+        }
+
+        if (user.email === newEmail) {
+            return sendApiError(res, 400, "New email must be different from your current email address.", "SAME_EMAIL");
+        }
+
+        // Check if new email is already in use by any other account
+        const existing = await User.findOne({ email: newEmail });
+        if (existing) {
+            return sendApiError(res, 409, "This email address is already registered to another account.", "EMAIL_ALREADY_REGISTERED");
+        }
+
+        // Generate 32-byte cryptographically secure verification token
+        const rawToken = crypto.randomBytes(32).toString("hex");
+        const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+
+        // 1 hour expiry
+        user.pendingEmail = newEmail;
+        user.emailVerifyTokenHash = tokenHash;
+        user.emailVerifyExpires = new Date(Date.now() + 60 * 60 * 1000);
+        await user.save();
+
+        const baseUrl = `${req.protocol}://${req.get("host")}`;
+
+        // Send verification email to the proposed address and await result
+        const emailResult = await sendEmailChangeVerificationEmail({
+            user,
+            newEmail,
+            verifyToken: rawToken,
+            baseUrl,
+        });
+
+        if (!emailResult || !emailResult.success) {
+            // Helper to mask recipient address for safe diagnostics
+            const maskedRecipient = newEmail.replace(/^(.)(.*)(@.*)$/, (_, first, middle, domain) => {
+                return `${first}${"*".repeat(Math.max(1, Math.min(middle.length, 5)))}${domain}`;
+            });
+
+            console.error(
+                `[EmailChange] Verification email delivery failed for recipient ${maskedRecipient}:`,
+                emailResult?.error || "Unknown mail transport error"
+            );
+
+            // Safely clear pending fields ONLY if they still match this specific request
+            // (prevents wiping out a newer concurrent request)
+            await User.updateOne(
+                { _id: userId, emailVerifyTokenHash: tokenHash },
+                {
+                    $set: { pendingEmail: null },
+                    $unset: {
+                        emailVerifyTokenHash: 1,
+                        emailVerifyExpires: 1,
+                    },
+                }
+            );
+
+            return sendApiError(
+                res,
+                502,
+                "Unable to send verification email. Please verify the address and try again later.",
+                "EMAIL_SEND_FAILED"
+            );
+        }
+
+        return sendApiSuccess(res, 200, {
+            pendingEmail: newEmail,
+        }, `Verification email sent to ${newEmail}. Please confirm the link to update your email address.`);
+    } catch (error) {
+        next(error);
+    }
+}
+
+/**
+ * Verify and finalize email change (F01)
+ */
+export async function verifyEmailChange(req, res, next) {
+    try {
+        const userId = req.session.user.id;
+        const rawToken = String(req.body.token || req.query.token || "").trim();
+
+        if (!rawToken) {
+            return sendApiError(res, 400, "Verification token is required.", "MISSING_TOKEN");
+        }
+
+        const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+
+        const user = await User.findOne({
+            _id: userId,
+            emailVerifyTokenHash: tokenHash,
+            emailVerifyExpires: { $gt: new Date() },
+        }).select("+emailVerifyTokenHash");
+
+        if (!user || !user.pendingEmail) {
+            return sendApiError(res, 400, "Invalid, expired, or already-used verification link.", "INVALID_TOKEN");
+        }
+
+        const oldEmail = user.email;
+        const verifiedEmail = user.pendingEmail;
+
+        // Re-check uniqueness in case another account registered it in the interim
+        const duplicate = await User.findOne({ email: verifiedEmail, _id: { $ne: user._id } });
+        if (duplicate) {
+            user.pendingEmail = null;
+            user.emailVerifyTokenHash = undefined;
+            user.emailVerifyExpires = undefined;
+            await user.save();
+            return sendApiError(res, 409, "This email address was registered by another account.", "EMAIL_ALREADY_REGISTERED");
+        }
+
+        // Apply new email and invalidate verification token
+        user.email = verifiedEmail;
+        user.pendingEmail = null;
+        user.emailVerifyTokenHash = undefined;
+        user.emailVerifyExpires = undefined;
+        await user.save();
+
+        // Update session
+        req.session.user.email = verifiedEmail;
+        await new Promise((resolve) => req.session.save(resolve));
+
+        // Dispatch security notification to the old email address
+        sendEmailAddressChangedNotice({
+            user,
+            oldEmail,
+            newEmail: verifiedEmail,
+        }).catch((err) => {
+            console.error("[EmailChange] Error dispatching old-email security alert:", err.message);
+        });
+
+        return sendApiSuccess(res, 200, {
+            email: verifiedEmail,
+        }, "Email address updated and verified successfully.");
+    } catch (error) {
+        next(error);
+    }
+}
+
 
 /**
  * Get authenticated student's dashboard (enrolled courses with progress)
@@ -200,8 +531,19 @@ export async function getEnrolledCourse(req, res, next) {
         const progressRecords = await Progress.find({ userId, lessonId: { $in: lessonIds } }).lean();
         const progressMap = new Map(progressRecords.map((p) => [p.lessonId.toString(), p]));
 
+        // Compute teacher-controlled content access permissions
+        let effectiveAccess = null;
+        if (!isAdmin) {
+            effectiveAccess = await computeEffectiveAccess(course._id, userId);
+        }
+
         const syllabus = lessons.map((l) => {
             const prog = progressMap.get(l._id.toString());
+            const lessonAccess = effectiveAccess?.lessons?.[l._id.toString()];
+            const isModuleUnlocked = isAdmin ? true : (lessonAccess ? lessonAccess.isModuleUnlocked : true);
+            const isLessonDirectlyUnlocked = isAdmin ? true : (lessonAccess ? lessonAccess.isLessonDirectlyUnlocked : true);
+            const isEffectivelyUnlocked = isAdmin ? true : (lessonAccess ? lessonAccess.isEffectivelyUnlocked : true);
+
             return {
                 id: l._id.toString(),
                 title: l.title,
@@ -211,6 +553,9 @@ export async function getEnrolledCourse(req, res, next) {
                 durationMinutes: l.durationMinutes || (l.durationSeconds ? Math.round(l.durationSeconds / 60) : 0),
                 durationSeconds: l.durationSeconds || (l.durationMinutes ? l.durationMinutes * 60 : 0),
                 isFreePreview: Boolean(l.isFreePreview),
+                isModuleUnlocked,
+                isLessonUnlocked: isLessonDirectlyUnlocked,
+                isUnlocked: isEffectivelyUnlocked,
                 progress: {
                     completed: Boolean(prog?.completed),
                     lastPositionSeconds: prog?.lastPositionSeconds ?? prog?.progressSeconds ?? 0,
@@ -282,6 +627,17 @@ export async function getLessonPlayback(req, res, next) {
         // Must be active enrollment, admin, or free preview
         if (!enrollment && !isAdmin && !lesson.isFreePreview) {
             return sendApiError(res, 403, "Active course enrollment is required to watch this lesson.", "ENROLLMENT_REQUIRED");
+        }
+
+        // Validate teacher-controlled content access permissions
+        if (!isAdmin) {
+            const accessCheck = await assertStudentLessonAccess(course._id, userId, lesson._id, lesson.isFreePreview);
+            if (!accessCheck.authorized) {
+                return sendApiError(res, 403, accessCheck.message, accessCheck.code, {
+                    moduleName: accessCheck.moduleName,
+                    lessonTitle: accessCheck.lessonTitle,
+                });
+            }
         }
 
         // Validate Device Limit & Registration (F10)
@@ -377,6 +733,17 @@ export async function saveProgress(req, res, next) {
 
         if (!enrollment && !isAdmin && !lesson.isFreePreview) {
             return sendApiError(res, 403, "Access denied. Active enrollment required.", "FORBIDDEN");
+        }
+
+        // Validate teacher-controlled content access permissions
+        if (!isAdmin) {
+            const accessCheck = await assertStudentLessonAccess(course._id, userId, lesson._id, lesson.isFreePreview);
+            if (!accessCheck.authorized) {
+                return sendApiError(res, 403, accessCheck.message, accessCheck.code, {
+                    moduleName: accessCheck.moduleName,
+                    lessonTitle: accessCheck.lessonTitle,
+                });
+            }
         }
 
         const rawPosition = req.body.position ?? req.body.lastPositionSeconds ?? req.body.watchedSeconds ?? 0;
@@ -610,9 +977,402 @@ export async function revokeDevice(req, res, next) {
         device.isRevoked = true;
         await device.save();
 
+        // Dispatch security notification to student email
+        const user = await User.findById(userId);
+        if (user) {
+            sendDeviceRevokedEmail({ user, device }).catch((err) => {
+                console.error("[DeviceRevoke] Error dispatching security email:", err.message);
+            });
+        }
+
         return sendApiSuccess(res, 200, {
             revokedDeviceId: device._id.toString(),
         }, "Device removed successfully");
+    } catch (error) {
+        next(error);
+    }
+}
+
+/**
+ * =========================================================================
+ * HOMEWORK & ASSIGNMENT SUBMISSION (STUDENT)
+ * =========================================================================
+ */
+
+/**
+ * List assignments for an enrolled course respecting content unlocking permissions
+ */
+export async function listCourseAssignments(req, res, next) {
+    try {
+        const { courseId } = req.params;
+        const studentId = req.session.user.id;
+
+        if (!mongoose.isValidObjectId(courseId)) {
+            return sendApiError(res, 404, "Course not found.", "NOT_FOUND");
+        }
+
+        const course = await Course.findById(courseId).select("_id title isPublished");
+        if (!course) {
+            return sendApiError(res, 404, "Course not found.", "NOT_FOUND");
+        }
+
+        const isAdmin = req.session.user.role === "super_admin" || req.session.user.role === "admin";
+        const enrollment = await Enrollment.findOne({ userId: studentId, courseId: course._id, status: "active" }).lean();
+
+        if (!enrollment && !isAdmin) {
+            return sendApiError(res, 403, "You must be actively enrolled in this course to view assignments.", "NOT_ENROLLED");
+        }
+
+        // Fetch only ENABLED assignments
+        const assignments = await Assignment.find({
+            courseId: course._id,
+            isEnabled: true,
+        })
+            .populate("lessonId", "title order moduleName")
+            .sort({ createdAt: -1 })
+            .lean();
+
+        // Get student's submissions for these assignments
+        const assignmentIds = assignments.map((a) => a._id);
+        const mySubmissions = await AssignmentSubmission.find({
+            assignmentId: { $in: assignmentIds },
+            studentId,
+        })
+            .populate("reviewedBy", "name")
+            .sort({ version: -1 })
+            .lean();
+
+        const submissionsByAssignment = new Map();
+        for (const sub of mySubmissions) {
+            const aid = sub.assignmentId.toString();
+            if (!submissionsByAssignment.has(aid)) {
+                submissionsByAssignment.set(aid, []);
+            }
+            submissionsByAssignment.get(aid).push(sub);
+        }
+
+        // Filter assignments based on content unlocking permissions
+        const accessibleAssignments = [];
+        for (const assignment of assignments) {
+            if (!isAdmin) {
+                const access = await assertStudentAssignmentAccess(assignment, studentId);
+                if (!access.authorized) {
+                    continue; // Locked by module/lesson or disabled
+                }
+            }
+
+            const studentSubs = submissionsByAssignment.get(assignment._id.toString()) || [];
+            const latest = studentSubs[0] || null;
+
+            accessibleAssignments.push({
+                id: assignment._id.toString(),
+                title: assignment.title,
+                description: assignment.description,
+                scope: assignment.scope,
+                moduleName: assignment.moduleName,
+                lessonId: assignment.lessonId?._id?.toString() || null,
+                lesson: assignment.lessonId
+                    ? { id: assignment.lessonId._id.toString(), title: assignment.lessonId.title, order: assignment.lessonId.order }
+                    : null,
+                resourceLinks: assignment.resourceLinks || [],
+                status: latest ? latest.status : "not_submitted",
+                hasSubmitted: Boolean(latest),
+                isReviewed: latest?.status === "reviewed",
+                latestSubmission: latest
+                    ? {
+                        id: latest._id.toString(),
+                        version: latest.version,
+                        driveLinks: latest.driveLinks,
+                        textAnswer: latest.textAnswer,
+                        status: latest.status,
+                        submittedAt: latest.submittedAt,
+                        reviewedAt: latest.reviewedAt,
+                        reviewedBy: latest.reviewedBy?.name || null,
+                    }
+                    : null,
+                totalVersions: studentSubs.length,
+                createdAt: assignment.createdAt,
+            });
+        }
+
+        return sendApiSuccess(res, 200, {
+            courseId: course._id.toString(),
+            courseTitle: course.title,
+            assignments: accessibleAssignments,
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+/**
+ * Get details of a single assignment for a student
+ */
+export async function getStudentAssignment(req, res, next) {
+    try {
+        const { assignmentId } = req.params;
+        const studentId = req.session.user.id;
+
+        if (!mongoose.isValidObjectId(assignmentId)) {
+            return sendApiError(res, 404, "Assignment not found.", "NOT_FOUND");
+        }
+
+        const assignment = await Assignment.findById(assignmentId)
+            .populate("courseId", "title isPublished")
+            .populate("lessonId", "title order moduleName");
+
+        if (!assignment || !assignment.isEnabled) {
+            return sendApiError(res, 404, "Assignment not found or is currently disabled.", "NOT_FOUND");
+        }
+
+        const isAdmin = req.session.user.role === "super_admin" || req.session.user.role === "admin";
+        const enrollment = await Enrollment.findOne({
+            userId: studentId,
+            courseId: assignment.courseId._id,
+            status: "active",
+        }).lean();
+
+        if (!enrollment && !isAdmin) {
+            return sendApiError(res, 403, "You must be actively enrolled to view this assignment.", "NOT_ENROLLED");
+        }
+
+        // Validate content access (Module / Lesson unlocked)
+        if (!isAdmin) {
+            const access = await assertStudentAssignmentAccess(assignment, studentId);
+            if (!access.authorized) {
+                return sendApiError(res, 403, access.message, access.code, {
+                    moduleName: access.moduleName,
+                    lessonTitle: access.lessonTitle,
+                });
+            }
+        }
+
+        // Get complete submission history for this student
+        const submissions = await AssignmentSubmission.find({
+            assignmentId: assignment._id,
+            studentId,
+        })
+            .populate("reviewedBy", "name")
+            .sort({ version: -1 })
+            .lean();
+
+        const latest = submissions[0] || null;
+
+        return sendApiSuccess(res, 200, {
+            assignment: {
+                id: assignment._id.toString(),
+                courseId: assignment.courseId._id.toString(),
+                courseTitle: assignment.courseId.title,
+                title: assignment.title,
+                description: assignment.description,
+                scope: assignment.scope,
+                moduleName: assignment.moduleName,
+                lessonId: assignment.lessonId?._id?.toString() || null,
+                lesson: assignment.lessonId
+                    ? { id: assignment.lessonId._id.toString(), title: assignment.lessonId.title, order: assignment.lessonId.order }
+                    : null,
+                resourceLinks: assignment.resourceLinks || [],
+                status: latest ? latest.status : "not_submitted",
+                isReviewed: latest?.status === "reviewed",
+                canResubmit: !latest || latest.status !== "reviewed",
+                createdAt: assignment.createdAt,
+            },
+            submissions: submissions.map((s) => ({
+                id: s._id.toString(),
+                version: s.version,
+                driveLinks: s.driveLinks || [],
+                textAnswer: s.textAnswer || "",
+                status: s.status,
+                submittedAt: s.submittedAt,
+                reviewedAt: s.reviewedAt,
+                reviewedBy: s.reviewedBy?.name || null,
+            })),
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+/**
+ * Submit or resubmit an assignment
+ */
+export async function submitAssignment(req, res, next) {
+    try {
+        const { assignmentId } = req.params;
+        const studentId = req.session.user.id;
+        const { driveLinks, textAnswer } = req.body;
+
+        if (!mongoose.isValidObjectId(assignmentId)) {
+            return sendApiError(res, 404, "Assignment not found.", "NOT_FOUND");
+        }
+
+        const assignment = await Assignment.findById(assignmentId).populate("courseId", "title ownerId isPublished");
+        if (!assignment || !assignment.isEnabled) {
+            return sendApiError(res, 404, "Assignment not found or is currently disabled by instructor.", "NOT_FOUND");
+        }
+
+        const isAdmin = req.session.user.role === "super_admin" || req.session.user.role === "admin";
+        const enrollment = await Enrollment.findOne({
+            userId: studentId,
+            courseId: assignment.courseId._id,
+            status: "active",
+        }).lean();
+
+        if (!enrollment && !isAdmin) {
+            return sendApiError(res, 403, "You must be actively enrolled in this course to submit assignments.", "NOT_ENROLLED");
+        }
+
+        // Validate content access (Module / Lesson unlocked)
+        if (!isAdmin) {
+            const access = await assertStudentAssignmentAccess(assignment, studentId);
+            if (!access.authorized) {
+                return sendApiError(res, 403, access.message, access.code, {
+                    moduleName: access.moduleName,
+                    lessonTitle: access.lessonTitle,
+                });
+            }
+        }
+
+        // Check latest submission to enforce resubmission lock if Reviewed
+        const latestSubmission = await AssignmentSubmission.findOne({
+            assignmentId: assignment._id,
+            studentId,
+        })
+            .sort({ version: -1 })
+            .lean();
+
+        if (latestSubmission && latestSubmission.status === "reviewed") {
+            return sendApiError(
+                res,
+                403,
+                "This assignment has already been marked as Reviewed by your instructor and cannot be resubmitted.",
+                "SUBMISSION_LOCKED"
+            );
+        }
+
+        // Validate submission inputs:
+        // Must provide at least one valid Google Drive link OR non-empty text answer
+        const cleanText = typeof textAnswer === "string" ? textAnswer.trim() : "";
+        let cleanDriveLinks = [];
+
+        if (driveLinks && Array.isArray(driveLinks) && driveLinks.length > 0) {
+            const linkValidation = validateGoogleDriveLinks(driveLinks);
+            if (!linkValidation.valid) {
+                return sendApiError(res, 400, linkValidation.error, "INVALID_GOOGLE_DRIVE_LINK");
+            }
+            cleanDriveLinks = linkValidation.sanitizedLinks;
+        }
+
+        if (cleanDriveLinks.length === 0 && !cleanText) {
+            return sendApiError(
+                res,
+                400,
+                "Please provide at least one valid Google Drive link or a non-empty text answer.",
+                "EMPTY_SUBMISSION"
+            );
+        }
+
+        // Determine version number (incremented for resubmission)
+        const nextVersion = latestSubmission ? (latestSubmission.version || 1) + 1 : 1;
+
+        const submission = await AssignmentSubmission.create({
+            assignmentId: assignment._id,
+            courseId: assignment.courseId._id,
+            studentId,
+            version: nextVersion,
+            driveLinks: cleanDriveLinks,
+            textAnswer: cleanText,
+            status: "submitted",
+            submittedAt: new Date(),
+        });
+
+        // Notify course teacher via in-app notification
+        await notifyTeacherOnSubmission({
+            teacherId: assignment.courseId.ownerId,
+            student: req.session.user,
+            assignment,
+            course: assignment.courseId,
+            isResubmission: nextVersion > 1,
+        }).catch((err) => {
+            console.error("[AssignmentSubmit] Error dispatching in-app teacher notification:", err.message);
+        });
+
+        return sendApiSuccess(res, 201, {
+            submission: {
+                id: submission._id.toString(),
+                version: submission.version,
+                driveLinks: submission.driveLinks,
+                textAnswer: submission.textAnswer,
+                status: submission.status,
+                submittedAt: submission.submittedAt,
+            },
+            message: nextVersion > 1
+                ? `Assignment resubmitted successfully (Version ${nextVersion}).`
+                : "Assignment submitted successfully.",
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+/**
+ * Get in-app notifications for authenticated user
+ */
+export async function getNotifications(req, res, next) {
+    try {
+        const userId = req.session.user.id;
+        const notifications = await Notification.find({ userId })
+            .sort({ createdAt: -1 })
+            .limit(50)
+            .lean();
+
+        const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+        return sendApiSuccess(res, 200, {
+            notifications: notifications.map((n) => ({
+                id: n._id.toString(),
+                title: n.title,
+                message: n.message,
+                type: n.type,
+                data: n.data || {},
+                isRead: n.isRead,
+                createdAt: n.createdAt,
+            })),
+            unreadCount,
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+/**
+ * Mark in-app notifications as read
+ */
+export async function markNotificationAsRead(req, res, next) {
+    try {
+        const userId = req.session.user.id;
+        const { notificationId } = req.params;
+
+        if (notificationId === "all") {
+            await Notification.updateMany({ userId, isRead: false }, { $set: { isRead: true } });
+            return sendApiSuccess(res, 200, { markedAll: true }, "All notifications marked as read.");
+        }
+
+        if (!mongoose.isValidObjectId(notificationId)) {
+            return sendApiError(res, 400, "Invalid notification ID.", "INVALID_ID");
+        }
+
+        const notif = await Notification.findOneAndUpdate(
+            { _id: notificationId, userId },
+            { $set: { isRead: true } },
+            { returnDocument: "after" }
+        );
+
+        if (!notif) {
+            return sendApiError(res, 404, "Notification not found.", "NOT_FOUND");
+        }
+
+        return sendApiSuccess(res, 200, { id: notif._id.toString(), isRead: true });
     } catch (error) {
         next(error);
     }

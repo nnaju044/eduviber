@@ -2,47 +2,160 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import RoleBadge from "../components/RoleBadge.jsx";
+import GlyphPortal from "../components/GlyphPortal.jsx";
+
+function HeroContentLayer({
+  isDark = false,
+  isAuthenticated,
+  isSuperAdmin,
+  isTeacher,
+}) {
+  return (
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 space-y-6 text-center sm:text-left select-none">
+      <span
+        className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider ${isDark
+            ? "bg-white/15 text-white border border-white/25"
+            : "bg-black/10 text-black border border-black/15"
+          }`}
+      >
+        ✦ Live Interactive Learning Platform
+      </span>
+      <h2
+        className={`text-3xl sm:text-5xl font-black tracking-tight leading-tight ${isDark ? "text-white" : "text-black"
+          }`}
+      >
+        Master Practical Digital Skills.
+      </h2>
+      <p
+        className={`text-base sm:text-lg font-semibold leading-relaxed ${isDark ? "text-neutral-200" : "text-neutral-900"
+          }`}
+      >
+        Step through live course video lessons, complete assignments, manage
+        curriculum content access, and learn at your own pace.
+      </p>
+      <div className="pt-2 flex flex-wrap gap-4 items-center justify-center sm:justify-start">
+        <a
+          href="/courses"
+          tabIndex={isDark ? -1 : 0}
+          className={`px-6 py-3 rounded-xl font-bold text-sm shadow-lg transition-all min-h-[44px] flex items-center ${isDark
+              ? "bg-white hover:bg-neutral-100 text-black"
+              : "bg-black hover:bg-neutral-800 text-white"
+            }`}
+        >
+          Browse All Courses
+        </a>
+        {isAuthenticated ? (
+          <Link
+            to={isSuperAdmin ? "/app/admin" : isTeacher ? "/app/teacher" : "/app/student"}
+            tabIndex={isDark ? -1 : 0}
+            className={`px-6 py-3 rounded-xl font-bold text-sm shadow-md transition-all border min-h-[44px] flex items-center ${isDark
+                ? "bg-white/15 hover:bg-white/25 text-white border-white/30"
+                : "bg-white hover:bg-neutral-100 text-black border-neutral-300"
+              }`}
+          >
+            Go to Dashboard →
+          </Link>
+        ) : (
+          <Link
+            to="/app/login"
+            tabIndex={isDark ? -1 : 0}
+            className={`px-6 py-3 rounded-xl font-bold text-sm shadow-md transition-all border min-h-[44px] flex items-center ${isDark
+                ? "bg-white/15 hover:bg-white/25 text-white border-white/30"
+                : "bg-white hover:bg-neutral-100 text-black border-neutral-300"
+              }`}
+          >
+            Student Sign In
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function HomePage() {
   const { user, isAuthenticated, role, isSuperAdmin, isTeacher, isStudent } = useAuth();
 
   return (
-    <div className="space-y-12 py-4">
-      {/* Hero Section */}
-      <div className="relative rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900/90 to-slate-950 border border-slate-800 p-8 sm:p-12 overflow-hidden shadow-2xl">
-        <div className="absolute -right-16 -top-16 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="space-y-16 py-2">
+      {/* Scroll-Driven GlyphPortal Experience */}
+      <div className="rounded-3xl border border-slate-800 shadow-2xl bg-white">
+        <GlyphPortal
+          word="EDUVIBER"
+          focusChar="V"
+          interactive={true}
+          scrollLength={2.6}
+          fontWeight={900}
+          enterLabel="Enter Platform"
+        >
+          <div className="relative w-full grid grid-cols-1 grid-rows-1">
+            {/* Dark side (Black background): Crisp White fonts */}
+            <div
+              className="col-start-1 row-start-1 w-full"
+              style={{
+                clipPath: "polygon(0% 0%, var(--gp-brand-split, 37.5%) 0%, var(--gp-brand-split, 37.5%) 100%, 0% 100%)",
+                WebkitClipPath: "polygon(0% 0%, var(--gp-brand-split, 37.5%) 0%, var(--gp-brand-split, 37.5%) 100%, 0% 100%)",
+              }}
+              aria-hidden="true"
+            >
+              <HeroContentLayer
+                isDark={true}
+                isAuthenticated={isAuthenticated}
+                isSuperAdmin={isSuperAdmin}
+                isTeacher={isTeacher}
+              />
+            </div>
+
+            {/* Light side (Gold background): Crisp Black fonts */}
+            <div
+              className="col-start-1 row-start-1 w-full"
+              style={{
+                clipPath: "polygon(var(--gp-brand-split, 37.5%) 0%, 100% 0%, 100% 100%, var(--gp-brand-split, 37.5%) 100%)",
+                WebkitClipPath: "polygon(var(--gp-brand-split, 37.5%) 0%, 100% 0%, 100% 100%, var(--gp-brand-split, 37.5%) 100%)",
+              }}
+            >
+              <HeroContentLayer
+                isDark={false}
+                isAuthenticated={isAuthenticated}
+                isSuperAdmin={isSuperAdmin}
+                isTeacher={isTeacher}
+              />
+            </div>
+          </div>
+        </GlyphPortal>
+      </div>
+
+      {/* Hero Quick Navigation Section */}
+      <div className="relative rounded-2xl bg-white border border-neutral-200/80 p-8 sm:p-12 shadow-card">
         <div className="relative z-10 max-w-3xl space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold">
-            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-            Phase 3.1: React + Vite Frontend Foundation Active
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#CA8A04]/10 border border-[#CA8A04]/20 text-[#CA8A04] text-xs font-bold">
+            <span className="w-2 h-2 rounded-full bg-[#CA8A04] animate-pulse" />
+            Live Education Platform • Commercial Edition
           </div>
 
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight">
-            Next-Generation Learning, <br />
-            <span className="bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-500 bg-clip-text text-transparent">
-              Unified & Modular.
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-neutral-900 tracking-tight leading-tight">
+            High-Impact Practical Skills, <br />
+            <span className="text-[#CA8A04]">
+              Structured for Mastery.
             </span>
           </h1>
 
-          <p className="text-base text-slate-300 leading-relaxed max-w-2xl">
-            Welcome to the new EduVibe React application. This phase introduces modern single-page architecture while seamlessly interoperating with the existing Express backend, session authentication, CSRF protection, and EJS course platform.
+          <p className="text-base text-neutral-600 font-medium leading-relaxed max-w-2xl">
+            Step through curriculum video lessons, track your unique progress, submit assignments, and manage your student journey through a minimal, high-performance interface.
           </p>
 
           <div className="pt-2 flex flex-wrap gap-4 items-center">
             {isAuthenticated ? (
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <Link
                   to={isSuperAdmin ? "/app/admin" : isTeacher ? "/app/teacher" : "/app/student"}
-                  className="px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm shadow-lg shadow-amber-500/25 transition-all flex items-center gap-2"
+                  className="px-6 py-3 rounded-xl bg-black hover:bg-neutral-800 text-white font-bold text-sm shadow-sm transition-all flex items-center gap-2 min-h-[44px]"
                 >
                   <span>Go to My Dashboard</span>
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                  </svg>
+                  <span>→</span>
                 </Link>
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/80 border border-slate-700/80 text-xs">
-                  <span className="text-slate-400">Signed in as:</span>
-                  <span className="font-semibold text-slate-200">{user.name}</span>
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-neutral-100 border border-neutral-200 text-xs font-semibold text-neutral-700 min-h-[44px]">
+                  <span className="text-neutral-500">Active account:</span>
+                  <span className="text-black font-bold">{user?.name}</span>
                   <RoleBadge role={role} />
                 </div>
               </div>
@@ -50,16 +163,16 @@ export default function HomePage() {
               <div className="flex flex-wrap items-center gap-3">
                 <Link
                   to="/app/login"
-                  className="px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm shadow-lg shadow-amber-500/25 transition-all"
+                  className="px-6 py-3 rounded-xl bg-black hover:bg-neutral-800 text-white font-bold text-sm shadow-sm transition-all min-h-[44px] flex items-center"
                 >
-                  Sign In to React Portal
+                  Sign In to Platform
                 </Link>
                 <a
                   href="/courses"
-                  className="px-6 py-3 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-200 font-semibold text-sm border border-slate-700 hover:border-slate-600 transition-all flex items-center gap-2"
+                  className="px-6 py-3 rounded-xl bg-white hover:bg-neutral-50 text-neutral-900 font-bold text-sm border border-neutral-300 transition-all flex items-center gap-1.5 min-h-[44px]"
                 >
-                  <span>Browse Courses</span>
-                  <span className="text-[10px] text-amber-400 border border-amber-500/30 rounded px-1.5 py-0.5">EJS</span>
+                  <span>Browse Course Catalog</span>
+                  <span className="text-[#CA8A04]">↗</span>
                 </a>
               </div>
             )}
@@ -67,31 +180,34 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Role Architecture Grid */}
-      <div>
-        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-          <span>Role Architecture & Portals</span>
-          <span className="text-xs font-normal text-slate-400">— Phase 3.1 Placeholders</span>
-        </h2>
+      {/* Role Portals Grid */}
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-black text-neutral-900 tracking-tight">Dedicated Learning Portals</h2>
+          <p className="text-xs sm:text-sm text-neutral-500 font-medium mt-1">
+            Tailored workspaces engineered for each participant across the platform.
+          </p>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Super Admin Card */}
-          <div className="bg-slate-900/60 border border-slate-800 hover:border-purple-500/40 rounded-xl p-6 transition-all space-y-3 flex flex-col justify-between">
+          <div className="bg-white border border-neutral-200 hover:border-black rounded-2xl p-6 transition-all space-y-4 flex flex-col justify-between shadow-subtle hover:shadow-card">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-purple-400">Super Admin</span>
-                <span className="text-[10px] bg-purple-500/10 text-purple-300 border border-purple-500/20 px-2 py-0.5 rounded">
-                  /app/admin/*
+                <span className="text-xs font-bold uppercase tracking-wider text-black">Administrator</span>
+                <span className="text-[10px] bg-neutral-100 text-neutral-700 font-bold border border-neutral-200 px-2 py-0.5 rounded-full">
+                  /app/admin
                 </span>
               </div>
-              <h3 className="text-lg font-bold text-slate-100">Super Admin Console</h3>
-              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                Platform-wide governance, teacher approval pipeline, system audit logs, and 20% platform commission monitoring.
+              <h3 className="text-lg font-bold text-neutral-900">Admin Console</h3>
+              <p className="text-xs text-neutral-600 font-medium mt-1 leading-relaxed">
+                Platform operational metrics, teacher account approvals, course catalog publication, and payments audit ledger.
               </p>
             </div>
-            <div className="pt-4 border-t border-slate-800/80">
+            <div className="pt-4 border-t border-neutral-100">
               <Link
                 to="/app/admin"
-                className="text-xs font-semibold text-purple-400 hover:text-purple-300 flex items-center gap-1.5"
+                className="text-xs font-bold text-black hover:text-[#CA8A04] flex items-center gap-1.5 min-h-[36px]"
               >
                 <span>Launch Admin Console</span>
                 <span>→</span>
@@ -100,23 +216,23 @@ export default function HomePage() {
           </div>
 
           {/* Teacher Card */}
-          <div className="bg-slate-900/60 border border-slate-800 hover:border-amber-500/40 rounded-xl p-6 transition-all space-y-3 flex flex-col justify-between">
+          <div className="bg-white border border-neutral-200 hover:border-black rounded-2xl p-6 transition-all space-y-4 flex flex-col justify-between shadow-subtle hover:shadow-card">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-amber-400">Instructor</span>
-                <span className="text-[10px] bg-amber-500/10 text-amber-300 border border-amber-500/20 px-2 py-0.5 rounded">
-                  /app/teacher/*
+                <span className="text-xs font-bold uppercase tracking-wider text-[#CA8A04]">Instructor</span>
+                <span className="text-[10px] bg-[#CA8A04]/10 text-[#CA8A04] font-bold border border-[#CA8A04]/20 px-2 py-0.5 rounded-full">
+                  /app/teacher
                 </span>
               </div>
-              <h3 className="text-lg font-bold text-slate-100">Teacher Studio</h3>
-              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                Multi-teacher course authoring, Bunny Stream video uploads, enrollment tracking, and instructor revenue analytics.
+              <h3 className="text-lg font-bold text-neutral-900">Teacher Studio</h3>
+              <p className="text-xs text-neutral-600 font-medium mt-1 leading-relaxed">
+                Curriculum authoring, video lesson uploads, student enrollment, homework assignments, and granular access unlocking.
               </p>
             </div>
-            <div className="pt-4 border-t border-slate-800/80">
+            <div className="pt-4 border-t border-neutral-100">
               <Link
                 to="/app/teacher"
-                className="text-xs font-semibold text-amber-400 hover:text-amber-300 flex items-center gap-1.5"
+                className="text-xs font-bold text-black hover:text-[#CA8A04] flex items-center gap-1.5 min-h-[36px]"
               >
                 <span>Open Teacher Studio</span>
                 <span>→</span>
@@ -125,56 +241,28 @@ export default function HomePage() {
           </div>
 
           {/* Student Card */}
-          <div className="bg-slate-900/60 border border-slate-800 hover:border-emerald-500/40 rounded-xl p-6 transition-all space-y-3 flex flex-col justify-between">
+          <div className="bg-white border border-neutral-200 hover:border-black rounded-2xl p-6 transition-all space-y-4 flex flex-col justify-between shadow-subtle hover:shadow-card">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">Student</span>
-                <span className="text-[10px] bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 px-2 py-0.5 rounded">
-                  /app/student/*
+                <span className="text-xs font-bold uppercase tracking-wider text-neutral-600">Learner</span>
+                <span className="text-[10px] bg-neutral-100 text-neutral-700 font-bold border border-neutral-200 px-2 py-0.5 rounded-full">
+                  /app/student
                 </span>
               </div>
-              <h3 className="text-lg font-bold text-slate-100">Student Portal</h3>
-              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                Course viewing, tokenized secure playback, progress checkpoints, and order history.
+              <h3 className="text-lg font-bold text-neutral-900">Student Portal</h3>
+              <p className="text-xs text-neutral-600 font-medium mt-1 leading-relaxed">
+                Tokenized secure video playback, watermark identity protection, interactive homework submissions, and learning milestones.
               </p>
             </div>
-            <div className="pt-4 border-t border-slate-800/80">
+            <div className="pt-4 border-t border-neutral-100">
               <Link
                 to="/app/student"
-                className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1.5"
+                className="text-xs font-bold text-black hover:text-[#CA8A04] flex items-center gap-1.5 min-h-[36px]"
               >
-                <span>Go to Student Portal</span>
+                <span>Enter Student Portal</span>
                 <span>→</span>
               </Link>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Migration Status Card */}
-      <div className="bg-slate-900/40 border border-slate-800 rounded-xl p-6">
-        <h3 className="text-sm font-bold text-slate-200 mb-3 flex items-center gap-2">
-          <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span>Architecture Verification Matrix</span>
-        </h3>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
-          <div className="p-3 bg-slate-950/60 rounded-lg border border-slate-800/80">
-            <p className="text-slate-500">Frontend Stack</p>
-            <p className="font-semibold text-slate-200 mt-0.5">React + Vite + Tailwind</p>
-          </div>
-          <div className="p-3 bg-slate-950/60 rounded-lg border border-slate-800/80">
-            <p className="text-slate-500">Backend API</p>
-            <p className="font-semibold text-slate-200 mt-0.5">Express REST + Sessions</p>
-          </div>
-          <div className="p-3 bg-slate-950/60 rounded-lg border border-slate-800/80">
-            <p className="text-slate-500">CSRF Protection</p>
-            <p className="font-semibold text-slate-200 mt-0.5">x-csrf-token Header</p>
-          </div>
-          <div className="p-3 bg-slate-950/60 rounded-lg border border-slate-800/80">
-            <p className="text-slate-500">Legacy EJS App</p>
-            <p className="font-semibold text-emerald-400 mt-0.5">100% Preserved</p>
           </div>
         </div>
       </div>

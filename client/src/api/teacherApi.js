@@ -109,8 +109,150 @@ export const teacherApi = {
     return res?.data?.students || [];
   },
 
+  async listCourseStudents(courseId) {
+    const res = await apiFetch(`/api/teacher/courses/${courseId}/students`);
+    return res?.data || { students: [] };
+  },
+
+  async enrollExistingStudent(courseId, email) {
+    const res = await apiFetch(`/api/teacher/courses/${courseId}/students/enroll`, {
+      method: "POST",
+      body: { email },
+    });
+    return res?.data || null;
+  },
+
+  async createAndEnrollStudent(courseId, payload) {
+    const res = await apiFetch(`/api/teacher/courses/${courseId}/students/create`, {
+      method: "POST",
+      body: payload,
+    });
+    return res?.data || null;
+  },
+
+  async updateStudentEnrollmentStatus(courseId, studentId, status) {
+    const res = await apiFetch(`/api/teacher/courses/${courseId}/students/${studentId}/status`, {
+      method: "PATCH",
+      body: { status },
+    });
+    return res?.data || null;
+  },
+
+  async removeStudentFromCourse(courseId, studentId) {
+    const res = await apiFetch(`/api/teacher/courses/${courseId}/students/${studentId}`, {
+      method: "DELETE",
+    });
+    return res?.data || null;
+  },
+
   async getStudentProgress(courseId, studentId) {
     const res = await apiFetch(`/api/teacher/courses/${courseId}/students/${studentId}/progress`);
+    return res?.data || null;
+  },
+
+  // Content Access Management (Module & Lesson Unlocking)
+  async getCourseContentAccess(courseId) {
+    const res = await apiFetch(`/api/teacher/courses/${courseId}/content-access`);
+    return res?.data || null;
+  },
+
+  async getStudentContentAccess(courseId, studentId) {
+    const res = await apiFetch(`/api/teacher/courses/${courseId}/content-access/students/${studentId}`);
+    return res?.data || null;
+  },
+
+  async updateModuleAccess(courseId, { moduleName, unlocked, studentId = null }) {
+    const res = await apiFetch(`/api/teacher/courses/${courseId}/content-access/modules`, {
+      method: "PATCH",
+      body: { moduleName, unlocked, studentId },
+    });
+    return res?.data || null;
+  },
+
+  async updateLessonAccess(courseId, lessonId, { unlocked, studentId = null }) {
+    const res = await apiFetch(`/api/teacher/courses/${courseId}/content-access/lessons/${lessonId}`, {
+      method: "PATCH",
+      body: { unlocked, studentId },
+    });
+    return res?.data || null;
+  },
+
+  async bulkUnlockAll(courseId) {
+    const res = await apiFetch(`/api/teacher/courses/${courseId}/content-access/unlock-all`, {
+      method: "POST",
+    });
+    return res?.data || null;
+  },
+
+  async bulkLockAll(courseId) {
+    const res = await apiFetch(`/api/teacher/courses/${courseId}/content-access/lock-all`, {
+      method: "POST",
+    });
+    return res?.data || null;
+  },
+
+  // Homework & Assignment Management
+  async listAssignments(courseId) {
+    const res = await apiFetch(`/api/teacher/courses/${courseId}/assignments`);
+    return res?.data?.assignments || [];
+  },
+
+  async createAssignment(courseId, payload) {
+    const res = await apiFetch(`/api/teacher/courses/${courseId}/assignments`, {
+      method: "POST",
+      body: payload,
+    });
+    return res?.data?.assignment || null;
+  },
+
+  async getAssignment(assignmentId) {
+    const res = await apiFetch(`/api/teacher/assignments/${assignmentId}`);
+    return res?.data?.assignment || null;
+  },
+
+  async updateAssignment(assignmentId, payload) {
+    const res = await apiFetch(`/api/teacher/assignments/${assignmentId}`, {
+      method: "PATCH",
+      body: payload,
+    });
+    return res?.data?.assignment || null;
+  },
+
+  async toggleAssignmentStatus(assignmentId, isEnabled) {
+    const res = await apiFetch(`/api/teacher/assignments/${assignmentId}/status`, {
+      method: "PATCH",
+      body: { isEnabled },
+    });
+    return res?.data || null;
+  },
+
+  async listAssignmentSubmissions(assignmentId) {
+    const res = await apiFetch(`/api/teacher/assignments/${assignmentId}/submissions`);
+    return res?.data || null;
+  },
+
+  async getStudentSubmissionHistory(assignmentId, studentId) {
+    const res = await apiFetch(`/api/teacher/assignments/${assignmentId}/submissions/${studentId}`);
+    return res?.data || null;
+  },
+
+  async reviewSubmission(assignmentId, submissionId) {
+    const res = await apiFetch(`/api/teacher/assignments/${assignmentId}/submissions/${submissionId}/review`, {
+      method: "PATCH",
+    });
+    return res?.data || null;
+  },
+
+  // Notifications
+  async getNotifications() {
+    const res = await apiFetch("/api/teacher/notifications");
+    return res?.data || { notifications: [], unreadCount: 0 };
+  },
+
+  async markNotificationAsRead(notificationId) {
+    const res = await apiFetch(`/api/teacher/notifications/${notificationId}/read`, {
+      method: "PATCH",
+    });
     return res?.data || null;
   },
 };

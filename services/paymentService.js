@@ -120,7 +120,7 @@ export async function approvePaymentRecord(paymentId) {
 
             return { payment, enrollment, alreadyApproved: false };
         } catch (txErr) {
-            await session.abortTransaction().catch(() => {});
+            await session.abortTransaction().catch(() => { });
             session.endSession();
             throw txErr;
         }
@@ -165,8 +165,10 @@ export async function approvePaymentRecord(paymentId) {
 
 /**
  * Rejects a submitted payment with a specified reason.
+ * Crucial Safeguard: Rejecting a teacher-enrollment audit payment record does not suspend active student access
+ * if preserveActiveEnrollment is true.
  */
-export async function rejectPaymentRecord(paymentId, rejectionReason = "") {
+export async function rejectPaymentRecord(paymentId, rejectionReason = "", preserveActiveEnrollment = false) {
     if (!mongoose.isValidObjectId(paymentId)) {
         throw new Error("Invalid payment ID.");
     }
@@ -183,5 +185,51 @@ export async function rejectPaymentRecord(paymentId, rejectionReason = "") {
     payment.rejectionReason = String(rejectionReason || "").trim().slice(0, 500);
     await payment.save();
 
+    // If not preserved, or if student-submitted payment, enrollment is not touched here (enrollment remains in its current state or admin manages it)
     return { payment };
+}
+
+/**
+ * Idempotently creates or retrieves a financial tracking Payment record for a teacher enrollment.
+ * Avoids duplicate payments if retried.
+ */
+export async function recordTeacherEnrollmentPayment({
+    studentId,
+    courseId,
+    teacherId,
+    amount,
+    enrollmentId,
+}) {
+    if (!mongoose.isValidObjectId(studentId) || !mongoose.isValidObjectId(courseId)) {
+        throw new Error("Invalid student or course ID for payment tracking.");
+    }
+
+    // Check for existing payment for this student and course
+    const existingPayment = await Payment.findOne({
+        userId: studentId,
+        courseId,
+    });
+
+    if (existingPayment) {
+        return { payment: existingPayment, isNew: false };
+    }
+
+    const txRef = `TEACHER-ENROLL-${courseId.toString().slice(-6).toUpperCase()}-${studentId.toString().slice(-6).toUpperCase()}`;
+
+    const payment = await Payment.create({
+        userId: studentId,
+        courseId,
+        ownerId: teacherId || null,
+        amount: Number(amount) || 0,
+        transactionReference: txRef,
+        proofUrl: "",
+        status: "pending",
+        financialSnapshot: {
+            coursePrice: Number(amount) || 0,
+            currency: "INR",
+            collectionMethod: "direct_teacher",
+        },
+    });
+
+    return { payment, isNew: true };
 }

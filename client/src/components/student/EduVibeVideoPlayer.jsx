@@ -16,7 +16,7 @@ const PLAYER_JS_SCRIPT_SRC = "https://assets.mediadelivery.net/playerjs/player-0
  * - Two-device registration handling
  * - Network recovery & error retry
  */
-export default function EduVibeVideoPlayer({
+export default React.memo(function EduVibeVideoPlayer({
   lesson,
   playbackData,
   courseId,
@@ -26,6 +26,13 @@ export default function EduVibeVideoPlayer({
   const iframeRef = useRef(null);
   const containerRef = useRef(null);
   const playerRef = useRef(null);
+  const onProgressSavedRef = useRef(onProgressSaved);
+  const onLessonCompletedRef = useRef(onLessonCompleted);
+
+  useEffect(() => {
+    onProgressSavedRef.current = onProgressSaved;
+    onLessonCompletedRef.current = onLessonCompleted;
+  });
 
   const [isPlayerReady, setIsPlayerReady] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -94,9 +101,9 @@ export default function EduVibeVideoPlayer({
           watchedIntervalsRef.current = savedProgress.watchedIntervals || [];
           if (savedProgress.completed) {
             setIsCompleted(true);
-            onLessonCompleted?.();
+            onLessonCompletedRef.current?.();
           }
-          onProgressSaved?.(savedProgress);
+          onProgressSavedRef.current?.(savedProgress);
         }
       } catch (err) {
         console.warn("[ProgressSync] Non-OK response:", err.message);
@@ -105,7 +112,7 @@ export default function EduVibeVideoPlayer({
         isSyncingRef.current = false;
       }
     },
-    [courseId, lesson?.id, onProgressSaved, onLessonCompleted]
+    [courseId, lesson?.id]
   );
 
   // 2. Initialize Player.js instance when iframe & script are available
@@ -323,25 +330,7 @@ export default function EduVibeVideoPlayer({
           <span>100% Watched & Completed</span>
         </div>
       )}
-
-      {/* Branded Player Controls Overlay (F03) */}
-      <div className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300">
-        <PlayerControls
-          isPlaying={isPlaying}
-          currentTime={currentTime}
-          duration={duration}
-          playbackSpeed={playbackSpeed}
-          isMuted={isMuted}
-          isFullscreen={isFullscreen}
-          onPlay={handlePlay}
-          onPause={handlePause}
-          onSeek={handleSeek}
-          onSpeedChange={handleSpeedChange}
-          onToggleMute={handleToggleMute}
-          onToggleFullscreen={handleToggleFullscreen}
-        />
-      </div>
     </section>
   );
-}
+});
 

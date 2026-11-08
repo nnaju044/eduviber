@@ -639,11 +639,15 @@ async function runPhase2ApiTests() {
         console.log("✓ TEST 5.2 PASSED: GET /api/public/courses/:slug returns syllabus while strictly concealing video IDs.");
 
         // Test 5.3: Public teacher directory lists approved teachers and hides unapproved teachers
-        const pubTeachersRes = await apiRequest(server, { path: "/api/public/teachers" });
+        const pubTeachersRes = await apiRequest(server, { path: `/api/public/teachers?q=${encodeURIComponent(teacherA.name)}` });
         assert.equal(pubTeachersRes.status, 200);
         const pubTeacherList = pubTeachersRes.body.data.teachers;
         assert.ok(pubTeacherList.some((t) => t.id === teacherA._id.toString()), "Teacher A must appear in public directory");
-        assert.ok(!pubTeacherList.some((t) => t.id === teacherUnapproved._id.toString()), "Unapproved Teacher Gamma must NOT appear in public directory");
+
+        const unapprovedTeachersRes = await apiRequest(server, { path: `/api/public/teachers?q=${encodeURIComponent(teacherUnapproved.name)}` });
+        assert.equal(unapprovedTeachersRes.status, 200);
+        const unapprovedTeacherList = unapprovedTeachersRes.body.data.teachers;
+        assert.ok(!unapprovedTeacherList.some((t) => t.id === teacherUnapproved._id.toString()), "Unapproved Teacher Gamma must NOT appear in public directory");
         console.log("✓ TEST 5.3 PASSED: GET /api/public/teachers lists approved teachers and conceals unapproved teachers.");
 
         // ======================================================================

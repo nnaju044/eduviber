@@ -1,5 +1,7 @@
 import crypto from "node:crypto";
 import Device from "../models/Device.js";
+import User from "../models/User.js";
+import { sendNewDeviceRegisteredEmail, sendDeviceLimitBlockedEmail } from "./emailService.js";
 
 const DEVICE_COOKIE_NAME = "eduvibe_device_token";
 const MAX_DEVICES_PER_STUDENT = 2;
@@ -64,12 +66,28 @@ export function parseDeviceInfo(userAgent = "") {
 }
 
 /**
+ * Helper to extract cookie value from Express request
+ * Handles both req.cookies (if cookie-parser is installed) and req.headers.cookie
+ */
+function getCookie(req, name) {
+    if (req?.cookies && req.cookies[name]) {
+        return req.cookies[name];
+    }
+    const cookieHeader = req?.headers?.cookie;
+    if (!cookieHeader || typeof cookieHeader !== "string") {
+        return null;
+    }
+    const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
+    return match ? decodeURIComponent(match[1]) : null;
+}
+
+/**
  * Get or register device for authenticated student
  * Enforces maximum 2 devices per student
  */
 export async function authenticateDevice(req, res, userId) {
-    const rawToken = req.cookies?.[DEVICE_COOKIE_NAME] || req.headers["x-device-token"];
-    const userAgent = req.headers["user-agent"] || "";
+    const rawToken = getCookie(req, DEVICE_COOKIE_NAME) || req.headers?.["x-device-token"];
+    const userAgent = req.headers?.["user-agent"] || "";
     const ipAddress = req.ip || req.connection?.remoteAddress || "";
 
     const activeDevices = await Device.find({ userId, isRevoked: false }).sort({ lastActiveAt: -1 });
@@ -94,6 +112,16 @@ export async function authenticateDevice(req, res, userId) {
 
     // New device registration attempt
     if (activeDevices.length >= MAX_DEVICES_PER_STUDENT) {
+        // Send alert if third device was rejected
+        User.findById(userId).then((user) => {
+            if (user) {
+                const { browser, os } = parseDeviceInfo(userAgent);
+                sendDeviceLimitBlockedEmail({ user, attemptDetails: { browser, os } }).catch((err) => {
+                    console.error("[DeviceService] Error sending device limit blocked email:", err.message);
+                });
+            }
+        }).catch(() => { });
+
         return {
             authorized: false,
             code: "DEVICE_LIMIT_EXCEEDED",
@@ -127,6 +155,15 @@ export async function authenticateDevice(req, res, userId) {
         isRevoked: false,
     });
 
+    // Send security notification only on fresh successful registration (not on repeat playback)
+    User.findById(userId).then((user) => {
+        if (user) {
+            sendNewDeviceRegisteredEmail({ user, device: newDevice }).catch((err) => {
+                console.error("[DeviceService] Error sending new device registered email:", err.message);
+            });
+        }
+    }).catch(() => { });
+
     // Set cookie (6 months expiry, httpOnly, sameSite lax)
     if (res && typeof res.cookie === "function") {
         res.cookie(DEVICE_COOKIE_NAME, newRawToken, {
@@ -144,3 +181,29 @@ export async function authenticateDevice(req, res, userId) {
     };
 }
 
+/**
+ * Revokes all active registered devices for a student
+ * Called during password change and password reset to enforce total re-registration
+ *
+ * @param {string|import("mongoose").Types.ObjectId} userId
+ * @param {object} [res] - Optional express response to clear the device cookie
+ * @returns {Promise<number>} Number of devices revoked
+ */
+export async function revokeAllStudentDevices(userId, res = null) {
+    if (!userId) return 0;
+
+    const result = await Device.updateMany(
+        { userId, isRevoked: false },
+        { $set: { isRevoked: true } }
+    );
+
+    if (res && typeof res.clearCookie === "function") {
+        res.clearCookie(DEVICE_COOKIE_NAME, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+        });
+    }
+
+    return result.modifiedCount || 0;
+}

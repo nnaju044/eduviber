@@ -109,7 +109,7 @@ export default function LessonEditModal({
     }
   };
 
-  // Perform Secure Server-Side Video Upload
+  // Perform Secure Server-Side Video Upload via Multipart FormData
   const handleStartUpload = async () => {
     if (!selectedFile) {
       setUploadError("Please choose a video file first.");
@@ -117,25 +117,18 @@ export default function LessonEditModal({
     }
     try {
       setIsUploading(true);
-      setUploadProgress(15);
+      setUploadProgress(20);
       setUploadError("");
 
-      // Read file as base64 data for upload
-      const reader = new FileReader();
-      const readPromise = new Promise((resolve, reject) => {
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = () => reject(new Error("Failed to read video file."));
-      });
-      reader.readAsDataURL(selectedFile);
-      setUploadProgress(40);
-      const dataUrl = await readPromise;
+      // Send actual file via multipart FormData (streamed by Multer without base64 bloat)
+      const formData = new FormData();
+      formData.append("video", selectedFile);
+      if (title.trim()) {
+        formData.append("title", title.trim());
+      }
 
-      setUploadProgress(65);
-      const res = await teacherApi.uploadLessonVideo(courseId, {
-        title: title || selectedFile.name,
-        videoData: dataUrl,
-        filename: selectedFile.name,
-      });
+      setUploadProgress(50);
+      const res = await teacherApi.uploadLessonVideo(courseId, formData);
 
       setUploadProgress(100);
       if (res?.videoId) {

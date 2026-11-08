@@ -339,10 +339,10 @@ async function runTests() {
         }
         console.log("✓ TEST 10 PASSED: Expired token safely rejected.");
 
-        // TEST 11: Login with new password succeeds and displays reset success banner
+        // TEST 11: Login with new password succeeds and redirects to canonical React /app/login with reset=success
         const loginPageRes = await request("/login?reset=success");
-        if (loginPageRes.status !== 200 || !loginPageRes.text.includes("Your password has been reset successfully")) {
-            throw new Error("TEST 11 FAILED: Reset success banner not displayed on /login.");
+        if (loginPageRes.status !== 302 || !loginPageRes.headers.get("location").includes("/app/login?reset=success")) {
+            throw new Error(`TEST 11 FAILED: Canonical redirect to /app/login?reset=success not returned on /login. Status: ${loginPageRes.status}`);
         }
 
         const loginRes = await request("/login", {
@@ -397,9 +397,9 @@ async function runTests() {
             server.close();
         }
         if (sessionStore?.close) {
-            await sessionStore.close().catch(() => {});
+            await sessionStore.close().catch(() => { });
         }
-        await mongoose.disconnect().catch(() => {});
+        await mongoose.disconnect().catch(() => { });
         console.log("✓ Test fixtures cleaned up from database");
     }
 }

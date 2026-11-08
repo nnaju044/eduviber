@@ -32,10 +32,16 @@ export default function VideoPlayerContainer({
       ) : error ? (
         <div className="flex flex-col items-center justify-center gap-2.5 text-white p-6 text-center max-w-md">
           <span className="w-10 h-10 rounded-full bg-neutral-900 border border-neutral-700 text-[#CA8A04] font-bold text-lg flex items-center justify-center">
-            {error.code === "DEVICE_LIMIT_EXCEEDED" ? "📱" : "!"}
+            {error.code === "DEVICE_LIMIT_EXCEEDED" ? "📱" : (error.code === "MODULE_LOCKED" || error.code === "LESSON_LOCKED") ? "🔒" : "!"}
           </span>
           <p className="text-sm font-semibold text-white">
-            {error.code === "DEVICE_LIMIT_EXCEEDED" ? "Device Limit Reached" : "Playback Unavailable"}
+            {error.code === "DEVICE_LIMIT_EXCEEDED"
+              ? "Device Limit Reached"
+              : error.code === "MODULE_LOCKED"
+              ? "Module Locked by Instructor"
+              : error.code === "LESSON_LOCKED"
+              ? "Lesson Locked by Instructor"
+              : "Playback Unavailable"}
           </p>
           <p className="text-xs text-neutral-400 leading-relaxed">
             {error.message || "Unable to authorize video playback for this lesson."}
@@ -47,6 +53,10 @@ export default function VideoPlayerContainer({
             >
               Manage Registered Devices
             </a>
+          ) : (error.code === "MODULE_LOCKED" || error.code === "LESSON_LOCKED") ? (
+            <p className="mt-2 text-[11px] text-[#CA8A04] font-medium">
+              Please contact your course instructor or wait for them to unlock this content.
+            </p>
           ) : (
             onRetryPlayback && (
               <button

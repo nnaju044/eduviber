@@ -59,6 +59,121 @@ export const studentApi = {
     });
     return res?.data || null;
   },
+
+  /**
+   * Get student profile details (name, email, phone, avatar, pendingEmail)
+   */
+  async getProfile() {
+    const res = await apiFetch("/api/student/profile");
+    return res?.data?.profile || null;
+  },
+
+  /**
+   * Update permitted student profile fields (name, phone)
+   */
+  async updateProfile(profileData) {
+    const res = await apiFetch("/api/student/profile", {
+      method: "PATCH",
+      body: profileData,
+    });
+    return res?.data?.profile || null;
+  },
+
+  /**
+   * Upload or replace profile avatar
+   */
+  async uploadAvatar(formDataOrBase64) {
+    let body;
+    let headers = {};
+
+    if (formDataOrBase64 instanceof FormData) {
+      body = formDataOrBase64;
+    } else {
+      body = { image: formDataOrBase64 };
+    }
+
+    const res = await apiFetch("/api/student/profile/avatar", {
+      method: "POST",
+      body,
+      headers,
+    });
+    return res?.data || null;
+  },
+
+  /**
+   * Delete student avatar
+   */
+  async deleteAvatar() {
+    const res = await apiFetch("/api/student/profile/avatar", {
+      method: "DELETE",
+    });
+    return res?.data || null;
+  },
+
+  /**
+   * Request email change (sends verification link to new email)
+   */
+  async requestEmailChange(newEmail) {
+    const res = await apiFetch("/api/student/profile/email-change", {
+      method: "POST",
+      body: { newEmail },
+    });
+    return res?.data || null;
+  },
+
+  /**
+   * Verify and finalize email change using verification token
+   */
+  async verifyEmailChange(token) {
+    const res = await apiFetch("/api/student/profile/email-verify", {
+      method: "POST",
+      body: { token },
+    });
+    return res?.data || null;
+  },
+
+  /**
+   * Change password (with global session invalidation & re-login requirement)
+   */
+  async changePassword(passwordData) {
+    const res = await apiFetch("/api/auth/change-password", {
+      method: "POST",
+      body: passwordData,
+    });
+    return res?.data || null;
+  },
+
+  // Homework & Assignments (Student)
+  async listCourseAssignments(courseId) {
+    const res = await apiFetch(`/api/student/courses/${courseId}/assignments`);
+    return res?.data || { assignments: [] };
+  },
+
+  async getStudentAssignment(assignmentId) {
+    const res = await apiFetch(`/api/student/assignments/${assignmentId}`);
+    return res?.data || null;
+  },
+
+  async submitAssignment(assignmentId, payload) {
+    const res = await apiFetch(`/api/student/assignments/${assignmentId}/submissions`, {
+      method: "POST",
+      body: payload,
+    });
+    return res?.data || null;
+  },
+
+  // In-App Notifications
+  async getNotifications() {
+    const res = await apiFetch("/api/student/notifications");
+    return res?.data || { notifications: [], unreadCount: 0 };
+  },
+
+  async markNotificationAsRead(notificationId) {
+    const res = await apiFetch(`/api/student/notifications/${notificationId}/read`, {
+      method: "PATCH",
+    });
+    return res?.data || null;
+  },
 };
 
 export default studentApi;
