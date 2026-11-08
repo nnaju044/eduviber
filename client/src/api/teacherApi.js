@@ -90,6 +90,22 @@ export const teacherApi = {
   },
 
   // Bunny Stream Video Integration
+  async getVideoUploadAuth(courseId, data) {
+    const res = await apiFetch(`/api/teacher/courses/${courseId}/video-upload-auth`, {
+      method: "POST",
+      body: data,
+    });
+    return res?.data?.uploadAuth || null;
+  },
+
+  async verifyVideoUpload(courseId, data) {
+    const res = await apiFetch(`/api/teacher/courses/${courseId}/video-verify`, {
+      method: "POST",
+      body: data,
+    });
+    return res?.data || null;
+  },
+
   async uploadLessonVideo(courseId, payload) {
     const res = await apiFetch(`/api/teacher/courses/${courseId}/upload-video`, {
       method: "POST",

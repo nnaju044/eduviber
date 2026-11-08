@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { teacherApi } from "../../api/teacherApi.js";
+import { BunnyTusUploader } from "../../utils/tusUploader.js";
 import LoadingSpinner from "../LoadingSpinner.jsx";
 
 export default function LessonEditModal({
@@ -24,10 +25,12 @@ export default function LessonEditModal({
   const [videoMode, setVideoMode] = useState("upload"); // 'upload' | 'manual'
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadSpeed, setUploadSpeed] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [videoStatus, setVideoStatus] = useState(null);
   const [isVerifying, setIsVerifying] = useState(false);
+  const uploaderRef = useRef(null);
 
   // Form submission state
   const [submitting, setSubmitting] = useState(false);
@@ -94,13 +97,22 @@ export default function LessonEditModal({
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     if (file) {
+      const MAX_SIZE = 2 * 1024 * 1024 * 1024; // 2 GB
+      if (file.size > MAX_SIZE) {
+        setUploadError("Selected video exceeds the 2 GB maximum limit. Please select a video under 2 GB.");
+        setSelectedFile(null);
+        return;
+      }
       // Validate video MIME or extension
       if (!file.type.startsWith("video/") && !/\.(mp4|mov|mkv|webm|avi)$/i.test(file.name)) {
-        setUploadError("Please select a valid video file (.mp4, .mov, .mkv, .webm).");
+        setUploadError("Please select a valid video file (.mp4, .mov, .mkv, .webm, .avi).");
+        setSelectedFile(null);
         return;
       }
       setSelectedFile(file);
       setUploadError("");
+      setUploadProgress(0);
+      setUploadSpeed(0);
       if (!title) {
         // Auto-fill title from filename
         const baseName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
@@ -109,7 +121,7 @@ export default function LessonEditModal({
     }
   };
 
-  // Perform Secure Server-Side Video Upload via Multipart FormData
+  // Perform Direct Browser-to-Bunny Resumable TUS Video Upload
   const handleStartUpload = async () => {
     if (!selectedFile) {
       setUploadError("Please choose a video file first.");
@@ -117,28 +129,76 @@ export default function LessonEditModal({
     }
     try {
       setIsUploading(true);
-      setUploadProgress(20);
+      setUploadProgress(0);
+      setUploadSpeed(0);
       setUploadError("");
 
-      // Send actual file via multipart FormData (streamed by Multer without base64 bloat)
-      const formData = new FormData();
-      formData.append("video", selectedFile);
-      if (title.trim()) {
-        formData.append("title", title.trim());
+      // 1. Authenticate with backend and obtain Bunny TUS upload authorization
+      const auth = await teacherApi.getVideoUploadAuth(courseId, {
+        title: title.trim() || selectedFile.name,
+        fileName: selectedFile.name,
+        fileSize: selectedFile.size,
+      });
+
+      if (!auth || !auth.videoId || !auth.signature) {
+        throw new Error("Unable to obtain secure upload authorization from server.");
       }
 
-      setUploadProgress(50);
-      const res = await teacherApi.uploadLessonVideo(courseId, formData);
+      // 2. Direct browser upload to Bunny TUS endpoint
+      await new Promise((resolve, reject) => {
+        const uploader = new BunnyTusUploader(selectedFile, {
+          endpoint: auth.uploadEndpoint || "https://video.bunnycdn.com/tusupload",
+          auth: {
+            videoId: auth.videoId,
+            libraryId: auth.libraryId,
+            signature: auth.signature,
+            expirationTime: auth.expirationTime,
+          },
+          onProgress: ({ percentage, speedMBps }) => {
+            setUploadProgress(percentage);
+            setUploadSpeed(speedMBps);
+          },
+          onSuccess: async () => {
+            try {
+              // 3. Verify upload on backend before attaching to lesson
+              const verifyRes = await teacherApi.verifyVideoUpload(courseId, {
+                videoId: auth.videoId,
+                lessonId: lesson?.id,
+              });
 
-      setUploadProgress(100);
-      if (res?.videoId) {
-        setBunnyVideoId(res.videoId);
-        await verifyVideo(res.videoId);
-      }
+              if (verifyRes && verifyRes.verified) {
+                setBunnyVideoId(auth.videoId);
+                await verifyVideo(auth.videoId);
+                resolve();
+              } else {
+                reject(new Error("Video upload completed but server verification failed."));
+              }
+            } catch (vErr) {
+              reject(vErr);
+            }
+          },
+          onError: (err) => {
+            reject(err);
+          },
+        });
+
+        uploaderRef.current = uploader;
+        uploader.start();
+      });
     } catch (err) {
-      setUploadError(err.message || "Video upload failed. Please try again.");
+      setUploadError(err.message || "Video upload failed. You may retry to resume.");
     } finally {
       setIsUploading(false);
+      uploaderRef.current = null;
+    }
+  };
+
+  const handleCancelUpload = () => {
+    if (uploaderRef.current) {
+      uploaderRef.current.abort();
+      uploaderRef.current = null;
+      setIsUploading(false);
+      setUploadError("Upload paused/cancelled. You can retry to resume.");
     }
   };
 
@@ -333,29 +393,41 @@ export default function LessonEditModal({
                     />
                   </label>
 
-                  <button
-                    type="button"
-                    onClick={handleStartUpload}
-                    disabled={!selectedFile || isUploading}
-                    className="px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold text-xs transition-colors flex items-center justify-center gap-2 flex-shrink-0"
-                  >
-                    {isUploading ? (
-                      <>
-                        <LoadingSpinner size="sm" />
-                        <span>Uploading... {uploadProgress}%</span>
-                      </>
-                    ) : (
-                      <span>Upload to Bunny</span>
-                    )}
-                  </button>
+                  {isUploading ? (
+                    <button
+                      type="button"
+                      onClick={handleCancelUpload}
+                      className="px-4 py-2.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition-colors flex items-center justify-center gap-2 flex-shrink-0"
+                    >
+                      <LoadingSpinner size="sm" />
+                      <span>Pause / Cancel ({uploadProgress}%)</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleStartUpload}
+                      disabled={!selectedFile}
+                      className="px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold text-xs transition-colors flex items-center justify-center gap-2 flex-shrink-0"
+                    >
+                      <span>Upload Directly to Bunny (TUS)</span>
+                    </button>
+                  )}
                 </div>
 
                 {isUploading && (
-                  <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
-                    <div
-                      className="bg-emerald-400 h-1.5 transition-all duration-300"
-                      style={{ width: `${uploadProgress}%` }}
-                    />
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-[11px] text-slate-400">
+                      <span>Uploading directly to Bunny Stream...</span>
+                      <span>
+                        {uploadProgress}% {uploadSpeed > 0 ? `• ${uploadSpeed} MB/s` : ""}
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                      <div
+                        className="bg-emerald-400 h-2 transition-all duration-200"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
                   </div>
                 )}
               </div>

@@ -17,6 +17,8 @@ import {
     updateLesson,
     deleteLesson,
     uploadLessonVideo,
+    initTusVideoUpload,
+    verifyAndAttachVideo,
     getVideoStatus,
     listStudents,
     listCourseStudents,
@@ -99,7 +101,9 @@ router.patch("/courses/:courseId/lessons/:lessonId", requireApiTeacher, updateLe
 router.put("/courses/:courseId/lessons/:lessonId", requireApiTeacher, updateLesson);
 router.delete("/courses/:courseId/lessons/:lessonId", requireApiTeacher, deleteLesson);
 
-// Video Upload & Bunny Stream Integration (Multipart streaming with error handling)
+// Video Upload & Bunny Stream Integration (Direct TUS Resumable & Fallback Multipart)
+router.post("/courses/:courseId/video-upload-auth", requireApiTeacher, initTusVideoUpload);
+router.post("/courses/:courseId/video-verify", requireApiTeacher, verifyAndAttachVideo);
 router.post(
     "/courses/:courseId/upload-video",
     requireApiTeacher,
@@ -107,7 +111,7 @@ router.post(
         videoUpload.single("video")(req, res, (err) => {
             if (err) {
                 if (err.code === "LIMIT_FILE_SIZE") {
-                    return sendApiError(res, 400, "Video size exceeds maximum 500 MB limit.", "FILE_TOO_LARGE");
+                    return sendApiError(res, 400, "Video size exceeds maximum 500 MB limit for server-side upload. Use direct upload instead.", "FILE_TOO_LARGE");
                 }
                 if (err.message && err.message.startsWith("INVALID_VIDEO_FORMAT")) {
                     return sendApiError(res, 400, err.message.replace("INVALID_VIDEO_FORMAT: ", ""), "INVALID_FILE_TYPE");

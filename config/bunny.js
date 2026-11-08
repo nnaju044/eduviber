@@ -148,3 +148,31 @@ export async function uploadBunnyVideo(videoId, bufferOrStream) {
         videoId,
     };
 }
+
+/**
+ * Creates Bunny Stream TUS upload credentials for direct browser uploads.
+ * Never returns the secret API key to the client.
+ */
+export async function createBunnyTusUploadAuth(title = "Lesson Video", ttlSeconds = 86400) {
+    const { libraryId, apiKey } = getConfig();
+
+    // 1. Create video shell in Bunny Stream library to get video GUID
+    const video = await createBunnyVideo(title);
+    const videoId = video.videoId;
+
+    // 2. Generate authorization signature and expiry
+    const expirationTime = Math.floor(Date.now() / 1000) + ttlSeconds;
+    const signature = crypto
+        .createHash("sha256")
+        .update(`${libraryId}${apiKey}${expirationTime}${videoId}`)
+        .digest("hex");
+
+    return {
+        videoId,
+        libraryId,
+        expirationTime,
+        signature,
+        uploadEndpoint: "https://video.bunnycdn.com/tusupload",
+        maxSize: 2 * 1024 * 1024 * 1024, // 2 GB limit
+    };
+}

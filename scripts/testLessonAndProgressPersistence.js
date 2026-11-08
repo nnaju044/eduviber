@@ -10,9 +10,10 @@ import Lesson from "../models/Lesson.js";
 import User from "../models/User.js";
 import Enrollment from "../models/Enrollment.js";
 import Progress from "../models/Progress.js";
+import ContentAccess from "../models/ContentAccess.js";
 import { connectTestDB, assertTestDatabaseIsolation } from "../config/testDbGuard.js";
 
-import apiRoutes from "../api/routes/index.js";
+import apiRoutes from "../server-api/routes/index.js";
 import studentRoutes from "../routes/studentRoutes.js";
 
 function makeRequest(server, options, body = null, cookie = null, extraHeaders = {}) {
@@ -39,7 +40,7 @@ function makeRequest(server, options, body = null, cookie = null, extraHeaders =
                     let json = null;
                     try {
                         json = JSON.parse(data);
-                    } catch {}
+                    } catch { }
                     const setCookie = res.headers["set-cookie"];
                     resolve({
                         status: res.statusCode,
@@ -301,6 +302,18 @@ async function run() {
         // TEST 4: STUDENT PLAYBACK PROGRESS API PERSISTENCE
         // ======================================================================
         console.log("\n--- TEST 4: STUDENT PLAYBACK PROGRESS API PERSISTENCE ---");
+        // Ensure student has content access to all course modules & lessons (Module A & Module B)
+        await ContentAccess.findOneAndUpdate(
+            { courseId: course._id, scope: "student", userId: student._id },
+            {
+                $addToSet: {
+                    unlockedModules: { $each: ["Module A", "Module B"] },
+                    unlockedLessons: { $each: [directLesson1._id, directLesson2._id, apiLessonId] },
+                },
+            },
+            { upsert: true, returnDocument: "after" }
+        );
+
         // Student saves progress at 300s (5 mins into 25 min lesson)
         const saveProgressRes1 = await makeRequest(
             server,
@@ -475,6 +488,7 @@ async function run() {
     } finally {
         // Cleanup test fixtures
         console.log("Cleaning up test fixtures...");
+        if (testCourseIds.length) await ContentAccess.deleteMany({ courseId: { $in: testCourseIds } });
         if (testProgressIds.length) await Progress.deleteMany({ _id: { $in: testProgressIds } });
         if (testLessonIds.length) await Lesson.deleteMany({ _id: { $in: testLessonIds } });
         if (testEnrollmentIds.length) await Enrollment.deleteMany({ _id: { $in: testEnrollmentIds } });

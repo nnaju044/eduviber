@@ -14,7 +14,7 @@ import studentRoutes from "./routes/studentRoutes.js";
 import publicRoutes from "./routes/publicRoutes.js";
 import { requireAuth } from "./middleware/requireAuth.js";
 import { csrfProtection } from "./middleware/csrf.js";
-import apiRouter from "./api/routes/index.js";
+import apiRouter from "./server-api/routes/index.js";
 import { getTestDatabaseUri } from "./config/testDbGuard.js";
 
 dotenv.config();
