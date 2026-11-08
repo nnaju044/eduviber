@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "installCommand": "npm ci && npm --prefix client ci --include=dev",
   "rewrites": [
     {
       "source": "/(.*)",
@@ -8,7 +9,7 @@
   ],
   "functions": {
     "api/index.js": {
-      "includeFiles": "views/**"
+      "includeFiles": "{views/**,client/dist/**,public/**}"
     }
   }
 }

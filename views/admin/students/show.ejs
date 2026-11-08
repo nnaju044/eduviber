@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><%= student.name %> | Student Details</title>
+    <link rel="icon" type="image/png" href="/images/EDUviber_LOGO.png">
+    <link rel="apple-touch-icon" href="/images/EDUviber_LOGO.png">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
@@ -26,6 +28,7 @@
             </nav>
 
             <form action="/logout" method="POST" class="mt-8">
+                <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>">
                 <button class="text-sm text-gray-600 hover:text-red-600">Log out</button>
             </form>
         </aside>
@@ -143,6 +146,7 @@
                                         </td>
                                         <td class="p-3">
                                             <form action="/admin/enrollments/<%= enrollment._id %>/status" method="POST" class="flex items-center gap-2">
+                                                <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>">
                                                 <input type="hidden" name="redirectUrl" value="/admin/students/<%= student._id %>">
                                                 <select name="status"
                                                     class="text-xs border border-gray-300 rounded-lg p-1.5 focus:ring-1 focus:ring-yellow-500 outline-hidden">
@@ -176,6 +180,7 @@
                     </p>
                 <% } else { %>
                     <form action="/admin/enrollments" method="POST" class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                        <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>">
                         <input type="hidden" name="userId" value="<%= student._id %>">
                         <input type="hidden" name="redirectUrl" value="/admin/students/<%= student._id %>">
 

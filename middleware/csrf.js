@@ -41,8 +41,9 @@ export function csrfProtection(req, res, next) {
             return res.status(403).json({ error: "Invalid or missing CSRF token." });
         }
 
-        return res.status(403).render("public/404", {
+        return res.status(403).render("public/403", {
             message: "Invalid or missing CSRF token. Please refresh and try again.",
+            description: "Your session security token could not be verified. Please reload the page and resubmit.",
             user: req.session?.user || null,
         });
     }

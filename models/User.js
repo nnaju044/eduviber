@@ -27,8 +27,38 @@ const userSchema = new mongoose.Schema(
         },
         role: {
             type: String,
-            enum: ["student", "admin"],
+            enum: ["student", "teacher", "super_admin", "admin"],
             default: "student",
+        },
+        teacherProfile: {
+            headline: { type: String, trim: true, default: "" },
+            bio: { type: String, trim: true, default: "" },
+            payoutUpiId: { type: String, trim: true, default: "" },
+            payoutBankDetails: {
+                accountName: { type: String, trim: true, default: "" },
+                bankName: { type: String, trim: true, default: "" },
+                accountNumber: { type: String, trim: true, default: "" },
+                ifscCode: { type: String, trim: true, default: "" },
+            },
+            commissionRate: {
+                type: Number,
+                default: 0.20,
+                min: 0,
+                max: 1,
+            },
+            isApproved: {
+                type: Boolean,
+                default: false,
+            },
+            approvedAt: {
+                type: Date,
+                default: null,
+            },
+            approvedBy: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "User",
+                default: null,
+            },
         },
         mustChangePassword: {
             type: Boolean,
@@ -45,8 +75,34 @@ const userSchema = new mongoose.Schema(
         resetPasswordExpires: {
             type: Date,
         },
+        // E13: Profile avatar cache-busting version (avoids storing full URL)
+        avatarVersion: {
+            type: Number,
+            default: 0,
+        },
+        // E13: Email verification workflow fields
+        pendingEmail: {
+            type: String,
+            lowercase: true,
+            trim: true,
+            default: null,
+        },
+        emailVerifyTokenHash: {
+            type: String,
+            select: false,
+        },
+        emailVerifyExpires: {
+            type: Date,
+        },
     },
     { timestamps: true }
 );
+
+// Normalize legacy "admin" role to "super_admin" on save
+userSchema.pre("validate", function () {
+    if (this.role === "admin") {
+        this.role = "super_admin";
+    }
+});
 
 export default mongoose.model("User", userSchema);

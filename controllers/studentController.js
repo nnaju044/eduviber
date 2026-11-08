@@ -26,16 +26,6 @@ export async function watchLesson(req, res, next) {
             return res.status(404).send("Course not found.");
         }
 
-        const enrollment = await Enrollment.findOne({
-            userId: req.session.user.id,
-            courseId: course._id,
-            status: "active",
-        }).lean();
-
-        if (!enrollment && req.session.user.role !== "admin") {
-            return res.status(403).send("You do not have access to this course.");
-        }
-
         const lesson = await Lesson.findOne({
             _id: lessonId,
             courseId: course._id,
@@ -44,6 +34,17 @@ export async function watchLesson(req, res, next) {
 
         if (!lesson) {
             return res.status(404).send("Lesson not found or not published.");
+        }
+
+        const enrollment = await Enrollment.findOne({
+            userId: req.session.user.id,
+            courseId: course._id,
+            status: "active",
+        }).lean();
+
+        const isAdmin = req.session.user.role === "admin" || req.session.user.role === "super_admin";
+        if (!enrollment && !isAdmin && !lesson.isFreePreview) {
+            return res.status(403).send("You do not have access to this course.");
         }
 
         if (!lesson.bunnyVideoId) {
@@ -123,27 +124,28 @@ export async function saveLessonProgress(req, res, next) {
             return res.status(404).json({ error: "Course not found." });
         }
 
+        const lesson = await Lesson.findOne({
+            _id: lessonId,
+            courseId: course._id,
+            isPublished: true,
+        }).select("_id durationSeconds durationMinutes isFreePreview").lean();
+
+        if (!lesson) {
+            return res.status(404).json({ error: "Lesson not found." });
+        }
+
         const enrollment = await Enrollment.findOne({
             userId,
             courseId: course._id,
             status: "active",
         }).select("_id").lean();
 
-        if (!enrollment && req.session.user.role !== "admin") {
+        const isAdmin = req.session.user.role === "admin" || req.session.user.role === "super_admin";
+        if (!enrollment && !isAdmin && !lesson.isFreePreview) {
             return res.status(403).json({ error: "Access denied." });
         }
 
-        const lesson = await Lesson.findOne({
-            _id: lessonId,
-            courseId: course._id,
-            isPublished: true,
-        }).select("_id durationSeconds").lean();
-
-        if (!lesson) {
-            return res.status(404).json({ error: "Lesson not found." });
-        }
-
-        const rawPosition = req.body.position;
+        const rawPosition = req.body.position ?? req.body.lastPositionSeconds ?? req.body.watchedSeconds ?? 0;
         const position = Number(rawPosition);
         const completed = req.body.completed === true;
 
@@ -151,19 +153,44 @@ export async function saveLessonProgress(req, res, next) {
             return res.status(400).json({ error: "Invalid position." });
         }
 
+        const durationSeconds = (lesson.durationSeconds && lesson.durationSeconds > 0)
+            ? lesson.durationSeconds
+            : (lesson.durationMinutes || 0) * 60;
+
         // Allow a small tolerance for player duration rounding.
         if (
-            lesson.durationSeconds > 0 &&
-            position > lesson.durationSeconds + 10
+            durationSeconds > 0 &&
+            position > durationSeconds + 10
         ) {
             return res.status(400).json({ error: "Position exceeds lesson duration." });
         }
 
         const safePosition = Math.floor(position);
+        let percentage = 0;
+        if (durationSeconds > 0) {
+            percentage = Math.min(100, Math.round((safePosition / durationSeconds) * 100));
+        }
+        if (completed || percentage >= 90) {
+            percentage = 100;
+        }
+
+        const existingProgress = await Progress.findOne({ userId, lessonId: lesson._id }).lean();
+        const inputWatched = req.body.watchedSeconds !== undefined ? Number(req.body.watchedSeconds) : null;
+        const watchedSeconds = inputWatched !== null && Number.isFinite(inputWatched)
+            ? Math.max(existingProgress?.watchedSeconds || 0, Math.floor(inputWatched))
+            : Math.max(existingProgress?.watchedSeconds || 0, safePosition);
+
+        const resumePosition = completed ? 0 : safePosition;
+        const isCompleted = completed || percentage >= 90 || Boolean(existingProgress?.completed);
 
         const updateOps = {
             $set: {
-                lastPositionSeconds: completed ? 0 : safePosition,
+                courseId: course._id,
+                lastPositionSeconds: resumePosition,
+                progressSeconds: resumePosition,
+                watchedSeconds,
+                progressPercentage: percentage,
+                completed: isCompleted,
                 lastWatchedAt: new Date(),
             },
             $setOnInsert: {
@@ -171,10 +198,6 @@ export async function saveLessonProgress(req, res, next) {
                 lessonId: lesson._id,
             },
         };
-
-        if (completed) {
-            updateOps.$set.completed = true;
-        }
 
         const updatedProgress = await Progress.findOneAndUpdate(
             { userId, lessonId: lesson._id },
@@ -185,6 +208,9 @@ export async function saveLessonProgress(req, res, next) {
         return res.json({
             success: true,
             lastPositionSeconds: updatedProgress.lastPositionSeconds,
+            progressSeconds: updatedProgress.progressSeconds,
+            watchedSeconds: updatedProgress.watchedSeconds,
+            progressPercentage: updatedProgress.progressPercentage,
             completed: updatedProgress.completed,
         });
     } catch (error) {
@@ -197,7 +223,7 @@ export async function studentDashboard(req, res, next) {
         const user = req.session.user;
 
         // Ensure administrators keep their admin dashboard
-        if (user.role === "admin") {
+        if (user.role === "admin" || user.role === "super_admin") {
             return res.redirect("/admin");
         }
 

@@ -19,6 +19,7 @@ import User from "../models/User.js";
 import Enrollment from "../models/Enrollment.js";
 import Payment from "../models/Payment.js";
 import Progress from "../models/Progress.js";
+import { connectTestDB, assertTestDatabaseIsolation } from "../config/testDbGuard.js";
 
 import adminRoutes from "../routes/adminRoutes.js";
 import { csrfProtection } from "../middleware/csrf.js";
@@ -111,12 +112,9 @@ async function request(urlPath, options = {}) {
 async function runCourseLessonTests() {
     console.log("=== STARTING COURSE & LESSON EDIT/DELETE TESTS ===");
 
-    if (!process.env.MONGODB_URI) {
-        throw new Error("MONGODB_URI not configured in .env");
-    }
-
-    await mongoose.connect(process.env.MONGODB_URI);
-    console.log("✓ Connected to MongoDB Atlas");
+    await connectTestDB();
+    assertTestDatabaseIsolation(mongoose);
+    console.log(`✓ Connected to isolated test database: [${mongoose.connection.name}]`);
 
     await setupTestApp();
     console.log(`✓ Test server running at ${serverBaseUrl}`);

@@ -129,6 +129,7 @@ export async function createCourse(req, res, next) {
             thumbnail,
             price,
             isPublished: false,
+            ownerId: req.session.user.id,
         });
 
         res.redirect("/admin/courses");
@@ -412,6 +413,8 @@ export async function createLesson(req, res, next) {
 
         const order = Number(rawOrder);
         const durationSeconds = rawDuration === "" ? 0 : Number(rawDuration);
+        const isFreePreview = req.body.isFreePreview === "true" || req.body.isFreePreview === "on" || req.body.isFreePreview === true;
+        const durationMinutes = Math.round(durationSeconds / 60);
 
         const values = {
             title,
@@ -420,6 +423,7 @@ export async function createLesson(req, res, next) {
             order: rawOrder,
             durationSeconds: rawDuration,
             bunnyVideoId,
+            isFreePreview,
         };
 
         if (
@@ -462,6 +466,8 @@ export async function createLesson(req, res, next) {
             moduleName,
             order,
             durationSeconds,
+            durationMinutes,
+            isFreePreview,
             bunnyVideoId,
             isPublished: false,
         });
@@ -574,6 +580,8 @@ export async function updateLesson(req, res, next) {
 
         const order = Number(rawOrder);
         const durationSeconds = rawDuration === "" ? 0 : Number(rawDuration);
+        const isFreePreview = req.body.isFreePreview === "true" || req.body.isFreePreview === "on" || req.body.isFreePreview === true;
+        const durationMinutes = Math.round(durationSeconds / 60);
 
         const values = {
             ...lesson.toObject(),
@@ -584,6 +592,7 @@ export async function updateLesson(req, res, next) {
             durationSeconds: rawDuration,
             bunnyVideoId,
             isPublished,
+            isFreePreview,
         };
 
         if (
@@ -653,6 +662,8 @@ export async function updateLesson(req, res, next) {
         lesson.moduleName = moduleName;
         lesson.order = order;
         lesson.durationSeconds = durationSeconds;
+        lesson.durationMinutes = durationMinutes;
+        lesson.isFreePreview = isFreePreview;
         lesson.bunnyVideoId = bunnyVideoId;
         if (req.body.isPublished !== undefined) {
             lesson.isPublished = isPublished;
@@ -1077,6 +1088,59 @@ export async function listPayments(req, res, next) {
     }
 }
 
+async function calculatePaymentSnapshot(payment, session = null) {
+    if (payment.financialSnapshot?.calculatedAt) {
+        return;
+    }
+
+    const courseQuery = Course.findById(payment.courseId);
+    if (session) courseQuery.session(session);
+    const course = await courseQuery;
+
+    const ownerId = payment.ownerId || course?.ownerId || null;
+    let commissionRate = 0.20;
+    let isTeacherOwned = false;
+
+    if (ownerId) {
+        payment.ownerId = ownerId;
+        const userQuery = User.findById(ownerId);
+        if (session) userQuery.session(session);
+        const owner = await userQuery;
+
+        if (owner?.role === "teacher") {
+            isTeacherOwned = true;
+            commissionRate = typeof owner.teacherProfile?.commissionRate === "number"
+                ? owner.teacherProfile.commissionRate
+                : 0.20;
+        } else if (owner?.role === "super_admin" || owner?.role === "admin") {
+            commissionRate = 1.0;
+        }
+    }
+
+    const coursePrice = typeof payment.amount === "number" ? payment.amount : (course?.price || 0);
+    let platformCommission;
+    let teacherShare;
+
+    if (isTeacherOwned) {
+        platformCommission = Math.round(coursePrice * commissionRate * 100) / 100;
+        teacherShare = Math.round((coursePrice - platformCommission) * 100) / 100;
+    } else {
+        platformCommission = coursePrice;
+        teacherShare = 0;
+        commissionRate = 1.0;
+    }
+
+    payment.financialSnapshot = {
+        coursePrice,
+        commissionRate,
+        platformCommission,
+        teacherShare,
+        currency: "INR",
+        collectionMethod: "manual_platform",
+        calculatedAt: new Date(),
+    };
+}
+
 export async function approvePayment(req, res, next) {
     const session = await mongoose.startSession().catch(() => null);
     try {
@@ -1105,6 +1169,8 @@ export async function approvePayment(req, res, next) {
                     session.endSession();
                     return res.redirect(redirectUrl);
                 }
+
+                await calculatePaymentSnapshot(payment, session);
 
                 payment.status = "approved";
                 payment.reviewedAt = new Date();
@@ -1145,6 +1211,8 @@ export async function approvePayment(req, res, next) {
             if (payment.status === "approved") {
                 return res.redirect(redirectUrl);
             }
+
+            await calculatePaymentSnapshot(payment, null);
 
             payment.status = "approved";
             payment.reviewedAt = new Date();

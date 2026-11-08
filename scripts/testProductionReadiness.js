@@ -23,6 +23,7 @@ import Course from "../models/Course.js";
 import Lesson from "../models/Lesson.js";
 import Enrollment from "../models/Enrollment.js";
 import Progress from "../models/Progress.js";
+import { connectTestDB, assertTestDatabaseIsolation } from "../config/testDbGuard.js";
 import Payment from "../models/Payment.js";
 import { saveLessonProgress } from "../controllers/studentController.js";
 
@@ -123,9 +124,10 @@ async function setupTestApp() {
 async function runTests() {
     console.log("=== STARTING PRODUCTION READINESS & SECURITY TESTS ===");
 
-    // Connect to database
-    await mongoose.connect(process.env.MONGODB_URI);
-    console.log("✓ Connected to MongoDB Atlas");
+    // Connect to isolated test database
+    await connectTestDB();
+    assertTestDatabaseIsolation(mongoose);
+    console.log(`✓ Connected to isolated test database: [${mongoose.connection.name}]`);
 
     await setupTestApp();
     console.log(`✓ Test server running at ${baseUrl}`);
@@ -330,7 +332,11 @@ async function runTests() {
     }
 }
 
-runTests().catch((err) => {
-    console.error("Test Suite Failed:", err);
-    process.exit(1);
-});
+runTests()
+    .then(() => {
+        process.exit(0);
+    })
+    .catch((err) => {
+        console.error("Test Suite Failed:", err);
+        process.exit(1);
+    });

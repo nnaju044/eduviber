@@ -1,6 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import mongoose from "mongoose";
 import { connectDB } from "./config/db.js";
@@ -13,6 +14,8 @@ import studentRoutes from "./routes/studentRoutes.js";
 import publicRoutes from "./routes/publicRoutes.js";
 import { requireAuth } from "./middleware/requireAuth.js";
 import { csrfProtection } from "./middleware/csrf.js";
+import apiRouter from "./api/routes/index.js";
+import { getTestDatabaseUri } from "./config/testDbGuard.js";
 
 dotenv.config();
 
@@ -24,7 +27,7 @@ const PORT = process.env.PORT || 2000;
 
 // Trust front-facing reverse proxy (e.g. Vercel, Render, AWS ALB, Nginx, Fly.io, Cloudflare)
 if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
-    app.set("trust proxy", 1);
+  app.set("trust proxy", 1);
 }
 
 // Disable technology disclosure header
@@ -33,54 +36,79 @@ app.disable("x-powered-by");
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Resilient path resolver supporting local runtime, Docker, and Vercel Serverless Lambda environments
+function resolveAppPath(relativePath) {
+  const fromDirname = path.join(__dirname, relativePath);
+  if (fs.existsSync(fromDirname)) return fromDirname;
+  const fromCwd = path.join(process.cwd(), relativePath);
+  if (fs.existsSync(fromCwd)) return fromCwd;
+  return fromDirname;
+}
+
 app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "views"));
+app.set("views", resolveAppPath("views"));
 
 // Defensive HTTP security headers
 app.use((req, res, next) => {
-    res.setHeader("X-Content-Type-Options", "nosniff");
-    res.setHeader("X-Frame-Options", "SAMEORIGIN");
-    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-    if (process.env.NODE_ENV === "production") {
-        res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
-    }
-    next();
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  if (process.env.NODE_ENV === "production") {
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  }
+  next();
 });
 
 // Explicit request body size limits to prevent memory-exhaustion attacks
 app.use(express.urlencoded({ extended: true, limit: "5mb" }));
 app.use(express.json({ limit: "5mb" }));
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(resolveAppPath("public")));
+
+const clientDistPath = resolveAppPath(path.join("client", "dist"));
+const clientDistIndex = path.join(clientDistPath, "index.html");
+
+// Serve compiled React SPA static assets if build exists
+if (fs.existsSync(clientDistPath)) {
+  app.use(express.static(clientDistPath));
+}
 
 // Health-check endpoint for load balancers, Vercel, and container orchestrators (no secrets exposed)
 app.get("/health", async (req, res) => {
-    try {
-        await connectDB();
-    } catch {
-        // Logging handled inside connectDB
-    }
+  try {
+    await connectDB();
+  } catch {
+    // Logging handled inside connectDB
+  }
 
-    const isDbConnected = mongoose.connection.readyState === 1;
-    const status = isDbConnected ? "ok" : "degraded";
-    const statusCode = isDbConnected ? 200 : 503;
+  const isDbConnected = mongoose.connection.readyState === 1;
+  const status = isDbConnected ? "ok" : "degraded";
+  const statusCode = isDbConnected ? 200 : 503;
 
-    return res.status(statusCode).json({
-        status,
-        timestamp: new Date().toISOString(),
-        uptime: Math.floor(process.uptime()),
-        database: isDbConnected ? "connected" : "disconnected",
-    });
+  return res.status(statusCode).json({
+    status,
+    timestamp: new Date().toISOString(),
+    uptime: Math.floor(process.uptime()),
+    database: isDbConnected ? "connected" : "disconnected",
+  });
 });
 
 // Ensure MongoDB connection is established for all application routes
 app.use(async (req, res, next) => {
-    try {
-        await connectDB();
-        next();
-    } catch (err) {
-        next(err);
-    }
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    next(err);
+  }
 });
+
+const sessionStore = MongoStore.create({
+  mongoUrl: process.env.NODE_ENV === "test" ? getTestDatabaseUri() : process.env.MONGODB_URI,
+  collectionName: "sessions",
+  ttl: 60 * 60 * 24,
+});
+
+app.locals.sessionStore = sessionStore;
 
 app.use(
   session({
@@ -88,11 +116,7 @@ app.use(
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    store: MongoStore.create({
-      mongoUrl: process.env.MONGODB_URI,
-      collectionName: "sessions",
-      ttl: 60 * 60 * 24,
-    }),
+    store: sessionStore,
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -108,6 +132,30 @@ app.use(publicRoutes);
 app.use(authRoutes);
 app.use(studentRoutes);
 app.use("/admin", adminRoutes);
+app.use("/api", apiRouter);
+
+// SPA client routes fallback (serves React application under /app/*, redirects legacy aliases)
+app.use((req, res, next) => {
+  if (req.method !== "GET" && req.method !== "HEAD") return next();
+
+  // Redirect /teacher to canonical /app/teacher, and /student to canonical /app/student
+  if (req.path === "/teacher" || req.path.startsWith("/teacher/")) {
+    const target = req.originalUrl.replace(/^\/teacher/, "/app/teacher");
+    return res.redirect(302, target);
+  }
+  if (req.path === "/student" || req.path.startsWith("/student/")) {
+    const target = req.originalUrl.replace(/^\/student/, "/app/student");
+    return res.redirect(302, target);
+  }
+
+  // Serve React SPA for /app and any /app/* route
+  if (req.path === "/app" || req.path.startsWith("/app/")) {
+    if (fs.existsSync(clientDistIndex)) {
+      return res.sendFile(clientDistIndex);
+    }
+  }
+  next();
+});
 
 // Catch-all 404 handler
 app.use((req, res) => {

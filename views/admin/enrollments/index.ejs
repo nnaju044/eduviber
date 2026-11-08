@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Manage Enrollments | Admin</title>
+    <link rel="icon" type="image/png" href="/images/EDUviber_LOGO.png">
+    <link rel="apple-touch-icon" href="/images/EDUviber_LOGO.png">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
@@ -26,6 +28,7 @@
             </nav>
 
             <form action="/logout" method="POST" class="mt-8">
+                <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>">
                 <button class="text-sm text-gray-600 hover:text-red-600">Log out</button>
             </form>
         </aside>
