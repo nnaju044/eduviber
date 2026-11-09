@@ -54,19 +54,16 @@ export default function Navbar({ onToggleMobileSidebar }) {
             </Link>
 
             {/* Desktop Quick Nav */}
-            <nav className="hidden md:flex items-center gap-6 ml-4 text-sm font-semibold">
+            <nav className="hidden md:flex items-center gap-7 ml-2 text-sm font-semibold">
               <Link to="/app" className="text-neutral-600 hover:text-black transition-colors">
                 Home
               </Link>
               <a
                 href="/courses"
-                className="text-neutral-600 hover:text-[#CA8A04] transition-colors flex items-center gap-1.5"
+                className="text-neutral-600 hover:text-black transition-colors"
                 title="View Course Catalog"
               >
-                <span>Courses</span>
-                <span className="text-[10px] font-bold text-neutral-500 bg-neutral-100 border border-neutral-200 rounded px-1.5 py-0.5">
-                  EJS
-                </span>
+                Courses
               </a>
               {isAuthenticated && (
                 <Link to={dashboardHref} className="text-neutral-600 hover:text-black transition-colors">
@@ -77,7 +74,7 @@ export default function Navbar({ onToggleMobileSidebar }) {
           </div>
 
           {/* Right: Authenticated User Actions or Guest Login */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2.5">
             {isAuthenticated ? (
               <>
                 {/* In-app Notification Bell */}
@@ -168,16 +165,16 @@ export default function Navbar({ onToggleMobileSidebar }) {
                 </div>
               </>
             ) : (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5">
                 <Link
                   to="/app/login"
-                  className="px-4 py-2 text-xs font-bold rounded-xl text-black border border-neutral-200 hover:bg-neutral-50 transition min-h-[44px] flex items-center justify-center"
+                  className="px-3.5 py-1.5 text-xs font-bold rounded-lg text-neutral-800 hover:text-black border border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50 transition min-h-[44px] flex items-center justify-center active:scale-[0.99]"
                 >
                   Sign In
                 </Link>
                 <a
                   href="/courses"
-                  className="hidden sm:inline-flex px-4 py-2 text-xs font-bold rounded-xl bg-black text-white hover:bg-neutral-800 transition min-h-[44px] items-center justify-center"
+                  className="hidden sm:inline-flex px-3.5 py-1.5 text-xs font-bold rounded-lg bg-black text-white hover:bg-neutral-800 transition min-h-[44px] items-center justify-center shadow-xs active:scale-[0.99]"
                 >
                   Browse Courses
                 </a>

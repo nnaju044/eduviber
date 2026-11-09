@@ -377,7 +377,7 @@ export default function GlyphPortal({
     <section ref={sectionRef} id={uid} className={className} aria-label={text}
       style={{ "--gp-length": length, "--gp-characters": Array.from(text).length, ...style }}>
       <style>{`
-        ${q}{--gp-paper:#ffffff;--gp-ink:#000000;--gp-field:#CA8A04;--gp-foreground:#000000;position:relative;isolation:isolate;background:var(--gp-paper);color:var(--gp-ink);font-family:Arial,sans-serif;}
+        ${q}{--gp-paper:#ffffff;--gp-ink:#000000;--gp-field:#CA8A04;--gp-foreground:#000000;position:relative;isolation:isolate;background:var(--gp-paper);color:var(--gp-ink);font-family:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif;}
         ${q}>[data-gp-viewport]{position:absolute;inset:0 auto auto 0;height:100vh;height:100svh;width:0;pointer-events:none;visibility:hidden;}
         ${q} [data-gp-pin]{position:relative;height:var(--gp-height,100svh);overflow:clip;isolation:isolate;container-type:size;}
         ${q} [data-gp-field]{position:absolute;inset:0;background:linear-gradient(90deg, #000000 0%, #000000 var(--gp-brand-split, 37.5%), #CA8A04 var(--gp-brand-split, 37.5%), #CA8A04 100%);opacity:0;pointer-events:none;}
@@ -396,16 +396,17 @@ export default function GlyphPortal({
         @media(any-pointer:coarse){${q} [data-gp-touch-picker]{display:flex;}}
         ${q} [data-gp-fallback]{position:absolute;inset:0;display:none;place-items:center;font-size:min(calc(100cqw / var(--gp-characters)),38cqh);line-height:1;color:var(--gp-field);}
         ${q}[data-gp-ready] [data-gp-fallback]{visibility:hidden;}
-        ${q} [data-gp-caption]{position:absolute;inset:auto 8% 9%;display:flex;align-items:center;justify-content:space-between;gap:1rem;font:12px/1.4 Arial,sans-serif;opacity:var(--gp-caption,1);pointer-events:var(--gp-caption-hit,auto);}
+        ${q} [data-gp-caption]{position:absolute;inset:auto 5% 6%;display:flex;align-items:center;justify-content:space-between;gap:1.5rem;font:600 13px/1.5 'Plus Jakarta Sans',system-ui,-apple-system,sans-serif;letter-spacing:-0.01em;opacity:var(--gp-caption,1);pointer-events:var(--gp-caption-hit,auto);}
         ${q} [data-gp-caption]{font-family:inherit;}
         ${q} [data-gp-front]{position:absolute;inset:0;opacity:var(--gp-caption,1);pointer-events:none;}
         ${q} [data-gp-front] a,${q} [data-gp-front] button{pointer-events:var(--gp-caption-hit,auto);}
         ${q} [data-gp-front]:focus-within{opacity:1;}
-        ${q} [data-gp-hint]{max-width:30ch;color:var(--gp-ink);font-weight:600;}
-        ${q} [data-gp-enter]{display:inline-flex;align-items:center;gap:16px;min-height:44px;color:inherit;font:inherit;text-decoration:none;letter-spacing:inherit;font-weight:700;}
-        ${q} [data-gp-enter]:focus-visible{outline:2px solid currentColor;outline-offset:5px;}
+        ${q} [data-gp-hint]{max-width:32ch;color:var(--gp-ink);font-weight:600;display:inline-flex;align-items:center;gap:8px;}
+        ${q} [data-gp-hint]::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:#CA8A04;}
+        ${q} [data-gp-enter]{display:inline-flex;align-items:center;gap:10px;min-height:44px;color:var(--gp-ink);font:inherit;text-decoration:none;letter-spacing:-0.01em;font-weight:700;padding:0 4px;transition:color 0.15s ease;}
+        ${q} [data-gp-enter]:hover{color:#CA8A04;}
+        ${q} [data-gp-enter]:focus-visible{outline:2px solid var(--gp-field);outline-offset:5px;}
         ${q} [data-gp-caption]:focus-within{opacity:1;pointer-events:auto;}
-        ${q} [data-gp-enter]:focus-visible{background:var(--gp-paper);color:var(--gp-ink);padding:0 12px;margin:0 -12px;}
         ${q} [data-gp-content]{box-sizing:border-box;position:relative;min-height:var(--gp-height,100svh);padding:clamp(32px,7%,100px) 0;display:grid;align-content:center;color:var(--gp-foreground);background:var(--gp-field);overflow-wrap:anywhere;}
         ${q}[data-gp-motion=on] [data-gp-pin]{position:sticky;top:0;}
         ${q}[data-gp-motion=off] [data-gp-hint]{display:none;}
@@ -444,8 +445,8 @@ export default function GlyphPortal({
             </clipPath>
             <linearGradient id={`${uid}-brand-gradient`} x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stopColor="#000000" />
-              <stop offset="var(--gp-brand-split, 37.5%)" stopColor="#000000" />
-              <stop offset="var(--gp-brand-split, 37.5%)" stopColor="#CA8A04" />
+              <stop offset="37.5%" stopColor="#000000" />
+              <stop offset="37.5%" stopColor="#CA8A04" />
               <stop offset="100%" stopColor="#CA8A04" />
             </linearGradient>
           </defs>

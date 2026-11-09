@@ -11,35 +11,38 @@ function HeroContentLayer({
   isTeacher,
 }) {
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 space-y-6 text-center sm:text-left select-none">
-      <span
-        className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider ${isDark
-            ? "bg-white/15 text-white border border-white/25"
-            : "bg-black/10 text-black border border-black/15"
-          }`}
-      >
-        ✦ Live Interactive Learning Platform
-      </span>
+    <div className="max-w-2xl mx-auto px-6 sm:px-8 space-y-6 text-center sm:text-left select-none">
+      <div>
+        <span
+          className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold tracking-wide ${isDark
+            ? "bg-white/10 text-white border border-white/20"
+            : "bg-black/5 text-neutral-900 border border-neutral-200"
+            }`}
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-[#CA8A04]" />
+          Interactive Learning Platform
+        </span>
+      </div>
       <h2
-        className={`text-3xl sm:text-5xl font-black tracking-tight leading-tight ${isDark ? "text-white" : "text-black"
+        className={`text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.1] ${isDark ? "text-white" : "text-black"
           }`}
       >
         Master Practical Digital Skills.
       </h2>
       <p
-        className={`text-base sm:text-lg font-semibold leading-relaxed ${isDark ? "text-neutral-200" : "text-neutral-900"
+        className={`text-base sm:text-lg font-medium leading-relaxed max-w-xl ${isDark ? "text-neutral-300" : "text-neutral-700"
           }`}
       >
         Step through live course video lessons, complete assignments, manage
         curriculum content access, and learn at your own pace.
       </p>
-      <div className="pt-2 flex flex-wrap gap-4 items-center justify-center sm:justify-start">
+      <div className="pt-2 flex flex-wrap gap-3.5 items-center justify-center sm:justify-start">
         <a
           href="/courses"
           tabIndex={isDark ? -1 : 0}
-          className={`px-6 py-3 rounded-xl font-bold text-sm shadow-lg transition-all min-h-[44px] flex items-center ${isDark
-              ? "bg-white hover:bg-neutral-100 text-black"
-              : "bg-black hover:bg-neutral-800 text-white"
+          className={`px-6 py-3 rounded-xl font-bold text-sm transition-all min-h-[44px] flex items-center shadow-sm ${isDark
+            ? "bg-white hover:bg-neutral-100 text-black active:scale-[0.99]"
+            : "bg-black hover:bg-neutral-800 text-white active:scale-[0.99]"
             }`}
         >
           Browse All Courses
@@ -48,9 +51,9 @@ function HeroContentLayer({
           <Link
             to={isSuperAdmin ? "/app/admin" : isTeacher ? "/app/teacher" : "/app/student"}
             tabIndex={isDark ? -1 : 0}
-            className={`px-6 py-3 rounded-xl font-bold text-sm shadow-md transition-all border min-h-[44px] flex items-center ${isDark
-                ? "bg-white/15 hover:bg-white/25 text-white border-white/30"
-                : "bg-white hover:bg-neutral-100 text-black border-neutral-300"
+            className={`px-6 py-3 rounded-xl font-bold text-sm transition-all min-h-[44px] flex items-center ${isDark
+              ? "bg-white/10 hover:bg-white/20 text-white border border-white/20"
+              : "bg-white hover:bg-neutral-50 text-black border border-neutral-200 shadow-sm"
               }`}
           >
             Go to Dashboard →
@@ -59,9 +62,9 @@ function HeroContentLayer({
           <Link
             to="/app/login"
             tabIndex={isDark ? -1 : 0}
-            className={`px-6 py-3 rounded-xl font-bold text-sm shadow-md transition-all border min-h-[44px] flex items-center ${isDark
-                ? "bg-white/15 hover:bg-white/25 text-white border-white/30"
-                : "bg-white hover:bg-neutral-100 text-black border-neutral-300"
+            className={`px-6 py-3 rounded-xl font-bold text-sm transition-all min-h-[44px] flex items-center ${isDark
+              ? "bg-white/10 hover:bg-white/20 text-white border border-white/20"
+              : "bg-white hover:bg-neutral-50 text-black border border-neutral-200 shadow-sm"
               }`}
           >
             Student Sign In
@@ -76,9 +79,9 @@ export default function HomePage() {
   const { user, isAuthenticated, role, isSuperAdmin, isTeacher, isStudent } = useAuth();
 
   return (
-    <div className="space-y-16 py-2">
+    <div className="space-y-20 pb-16">
       {/* Scroll-Driven GlyphPortal Experience */}
-      <div className="rounded-3xl border border-slate-800 shadow-2xl bg-white">
+      <div className="w-full bg-white">
         <GlyphPortal
           word="EDUVIBER"
           focusChar="V"
@@ -124,148 +127,191 @@ export default function HomePage() {
         </GlyphPortal>
       </div>
 
-      {/* Hero Quick Navigation Section */}
-      <div className="relative rounded-2xl bg-white border border-neutral-200/80 p-8 sm:p-12 shadow-card">
-        <div className="relative z-10 max-w-3xl space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#CA8A04]/10 border border-[#CA8A04]/20 text-[#CA8A04] text-xs font-bold">
-            <span className="w-2 h-2 rounded-full bg-[#CA8A04] animate-pulse" />
-            Live Education Platform • Commercial Edition
+      {/* Platform & Curriculum Overview */}
+      <section className="space-y-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-baseline pt-4 border-t border-neutral-200/80">
+          <div className="lg:col-span-5 space-y-3">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#CA8A04]">
+              Structured Learning Architecture
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-black text-neutral-900 tracking-tight leading-snug">
+              Every course built for measurable digital proficiency.
+            </h2>
+            <p className="text-sm text-neutral-600 leading-relaxed font-medium">
+              Self-paced curriculum delivered through high-bitrate video lessons, progress-synced checkpoints, and direct instructor assessments.
+            </p>
+            <div className="pt-2">
+              <a
+                href="/courses"
+                className="inline-flex items-center gap-2 text-sm font-bold text-black hover:text-[#CA8A04] transition-colors"
+              >
+                <span>Explore the full course catalog</span>
+                <span className="text-[#CA8A04]">→</span>
+              </a>
+            </div>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-neutral-900 tracking-tight leading-tight">
-            High-Impact Practical Skills, <br />
-            <span className="text-[#CA8A04]">
-              Structured for Mastery.
-            </span>
-          </h1>
+          <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-3 gap-8">
+            <div className="space-y-2">
+              <span className="text-sm font-bold text-neutral-900 block tracking-tight">
+                Focused Video Lessons
+              </span>
+              <p className="text-xs text-neutral-600 leading-relaxed font-medium">
+                High-definition, distraction-free video playback designed for focused learning on any device.
+              </p>
+            </div>
 
-          <p className="text-base text-neutral-600 font-medium leading-relaxed max-w-2xl">
-            Step through curriculum video lessons, track your unique progress, submit assignments, and manage your student journey through a minimal, high-performance interface.
-          </p>
+            <div className="space-y-2">
+              <span className="text-sm font-bold text-neutral-900 block tracking-tight">
+                Pick Up Where You Left Off
+              </span>
+              <p className="text-xs text-neutral-600 leading-relaxed font-medium">
+                Your progress is saved automatically, so you can return to where you left off.
+              </p>
+            </div>
 
-          <div className="pt-2 flex flex-wrap gap-4 items-center">
-            {isAuthenticated ? (
-              <div className="flex flex-wrap items-center gap-3">
-                <Link
-                  to={isSuperAdmin ? "/app/admin" : isTeacher ? "/app/teacher" : "/app/student"}
-                  className="px-6 py-3 rounded-xl bg-black hover:bg-neutral-800 text-white font-bold text-sm shadow-sm transition-all flex items-center gap-2 min-h-[44px]"
-                >
-                  <span>Go to My Dashboard</span>
-                  <span>→</span>
-                </Link>
-                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-neutral-100 border border-neutral-200 text-xs font-semibold text-neutral-700 min-h-[44px]">
-                  <span className="text-neutral-500">Active account:</span>
-                  <span className="text-black font-bold">{user?.name}</span>
-                  <RoleBadge role={role} />
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-wrap items-center gap-3">
-                <Link
-                  to="/app/login"
-                  className="px-6 py-3 rounded-xl bg-black hover:bg-neutral-800 text-white font-bold text-sm shadow-sm transition-all min-h-[44px] flex items-center"
-                >
-                  Sign In to Platform
-                </Link>
-                <a
-                  href="/courses"
-                  className="px-6 py-3 rounded-xl bg-white hover:bg-neutral-50 text-neutral-900 font-bold text-sm border border-neutral-300 transition-all flex items-center gap-1.5 min-h-[44px]"
-                >
-                  <span>Browse Course Catalog</span>
-                  <span className="text-[#CA8A04]">↗</span>
-                </a>
-              </div>
-            )}
+            <div className="space-y-2">
+              <span className="text-sm font-bold text-neutral-900 block tracking-tight">
+                Guided Learning &amp; Feedback
+              </span>
+              <p className="text-xs text-neutral-600 leading-relaxed font-medium">
+                Step-by-step module milestones with homework submissions reviewed directly by your instructors.
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+
+        {/* Authenticated Fast-Switch Ribbon if logged in */}
+        {isAuthenticated && (
+          <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-neutral-100/70 border border-neutral-200">
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-semibold text-neutral-500">Signed in:</span>
+              <span className="text-xs font-bold text-black">{user?.name}</span>
+              <RoleBadge role={role} />
+            </div>
+            <Link
+              to={isSuperAdmin ? "/app/admin" : isTeacher ? "/app/teacher" : "/app/student"}
+              className="text-xs font-bold text-black hover:text-[#CA8A04] flex items-center gap-1.5 transition-colors"
+            >
+              <span>Continue to your dashboard</span>
+              <span>→</span>
+            </Link>
+          </div>
+        )}
+      </section>
 
       {/* Role Portals Grid */}
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-black text-neutral-900 tracking-tight">Dedicated Learning Portals</h2>
-          <p className="text-xs sm:text-sm text-neutral-500 font-medium mt-1">
-            Tailored workspaces engineered for each participant across the platform.
+      <section className="space-y-8 pt-4 border-t border-neutral-200/80">
+        <div className="max-w-xl">
+          <span className="text-xs font-bold uppercase tracking-wider text-[#CA8A04] block mb-1">
+            Dedicated Workspaces
+          </span>
+          <h2 className="text-2xl sm:text-3xl font-black text-neutral-900 tracking-tight">
+            Learning Portals
+          </h2>
+          <p className="text-xs sm:text-sm text-neutral-600 font-medium mt-1 leading-relaxed">
+            Tailored workspaces engineered for every participant across the platform.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Super Admin Card */}
-          <div className="bg-white border border-neutral-200 hover:border-black rounded-2xl p-6 transition-all space-y-4 flex flex-col justify-between shadow-subtle hover:shadow-card">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-black">Administrator</span>
-                <span className="text-[10px] bg-neutral-100 text-neutral-700 font-bold border border-neutral-200 px-2 py-0.5 rounded-full">
-                  /app/admin
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+          {/* Student Portal */}
+          <div className="group flex flex-col justify-between p-6 sm:p-7 rounded-2xl bg-neutral-50/60 border border-neutral-200/90 hover:border-black/30 hover:bg-neutral-50 transition-all duration-200">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-neutral-500">
+                  Learners
+                </span>
+                <span className="text-xs font-semibold text-neutral-400">
+                  01
                 </span>
               </div>
-              <h3 className="text-lg font-bold text-neutral-900">Admin Console</h3>
-              <p className="text-xs text-neutral-600 font-medium mt-1 leading-relaxed">
-                Platform operational metrics, teacher account approvals, course catalog publication, and payments audit ledger.
-              </p>
+              <div>
+                <h3 className="text-lg font-bold text-neutral-900 tracking-tight">
+                  Student Portal
+                </h3>
+                <p className="text-xs text-neutral-600 font-medium mt-2 leading-relaxed">
+                  Access enrolled video lessons, pick up where you left off, submit homework assignments, and track your completion milestones.
+                </p>
+              </div>
             </div>
-            <div className="pt-4 border-t border-neutral-100">
-              <Link
-                to="/app/admin"
-                className="text-xs font-bold text-black hover:text-[#CA8A04] flex items-center gap-1.5 min-h-[36px]"
-              >
-                <span>Launch Admin Console</span>
-                <span>→</span>
-              </Link>
-            </div>
-          </div>
 
-          {/* Teacher Card */}
-          <div className="bg-white border border-neutral-200 hover:border-black rounded-2xl p-6 transition-all space-y-4 flex flex-col justify-between shadow-subtle hover:shadow-card">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#CA8A04]">Instructor</span>
-                <span className="text-[10px] bg-[#CA8A04]/10 text-[#CA8A04] font-bold border border-[#CA8A04]/20 px-2 py-0.5 rounded-full">
-                  /app/teacher
-                </span>
-              </div>
-              <h3 className="text-lg font-bold text-neutral-900">Teacher Studio</h3>
-              <p className="text-xs text-neutral-600 font-medium mt-1 leading-relaxed">
-                Curriculum authoring, video lesson uploads, student enrollment, homework assignments, and granular access unlocking.
-              </p>
-            </div>
-            <div className="pt-4 border-t border-neutral-100">
-              <Link
-                to="/app/teacher"
-                className="text-xs font-bold text-black hover:text-[#CA8A04] flex items-center gap-1.5 min-h-[36px]"
-              >
-                <span>Open Teacher Studio</span>
-                <span>→</span>
-              </Link>
-            </div>
-          </div>
-
-          {/* Student Card */}
-          <div className="bg-white border border-neutral-200 hover:border-black rounded-2xl p-6 transition-all space-y-4 flex flex-col justify-between shadow-subtle hover:shadow-card">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-neutral-600">Learner</span>
-                <span className="text-[10px] bg-neutral-100 text-neutral-700 font-bold border border-neutral-200 px-2 py-0.5 rounded-full">
-                  /app/student
-                </span>
-              </div>
-              <h3 className="text-lg font-bold text-neutral-900">Student Portal</h3>
-              <p className="text-xs text-neutral-600 font-medium mt-1 leading-relaxed">
-                Tokenized secure video playback, watermark identity protection, interactive homework submissions, and learning milestones.
-              </p>
-            </div>
-            <div className="pt-4 border-t border-neutral-100">
+            <div className="pt-6 mt-6 border-t border-neutral-200/70">
               <Link
                 to="/app/student"
-                className="text-xs font-bold text-black hover:text-[#CA8A04] flex items-center gap-1.5 min-h-[36px]"
+                className="inline-flex items-center gap-2 text-xs font-bold text-black group-hover:text-[#CA8A04] transition-colors min-h-[44px]"
               >
                 <span>Enter Student Portal</span>
-                <span>→</span>
+                <span className="transition-transform group-hover:translate-x-0.5">→</span>
+              </Link>
+            </div>
+          </div>
+
+          {/* Teacher Portal */}
+          <div className="group flex flex-col justify-between p-6 sm:p-7 rounded-2xl bg-neutral-50/60 border border-neutral-200/90 hover:border-[#CA8A04]/50 hover:bg-neutral-50 transition-all duration-200">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#CA8A04]">
+                  Instructors
+                </span>
+                <span className="text-xs font-semibold text-neutral-400">
+                  02
+                </span>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-neutral-900 tracking-tight">
+                  Teacher Studio
+                </h3>
+                <p className="text-xs text-neutral-600 font-medium mt-2 leading-relaxed">
+                  Upload lesson materials, review student homework submissions, organize course modules, and manage student enrollments.
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-6 mt-6 border-t border-neutral-200/70">
+              <Link
+                to="/app/teacher"
+                className="inline-flex items-center gap-2 text-xs font-bold text-black group-hover:text-[#CA8A04] transition-colors min-h-[44px]"
+              >
+                <span>Open Teacher Studio</span>
+                <span className="transition-transform group-hover:translate-x-0.5">→</span>
+              </Link>
+            </div>
+          </div>
+
+          {/* Admin Portal */}
+          <div className="group flex flex-col justify-between p-6 sm:p-7 rounded-2xl bg-neutral-50/60 border border-neutral-200/90 hover:border-black/30 hover:bg-neutral-50 transition-all duration-200">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-neutral-900">
+                  Administration
+                </span>
+                <span className="text-xs font-semibold text-neutral-400">
+                  03
+                </span>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-neutral-900 tracking-tight">
+                  Admin Console
+                </h3>
+                <p className="text-xs text-neutral-600 font-medium mt-2 leading-relaxed">
+                  Review platform activity, approve teacher accounts, publish courses to the catalog, and manage platform operations.
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-6 mt-6 border-t border-neutral-200/70">
+              <Link
+                to="/app/admin"
+                className="inline-flex items-center gap-2 text-xs font-bold text-black group-hover:text-[#CA8A04] transition-colors min-h-[44px]"
+              >
+                <span>Launch Admin Console</span>
+                <span className="transition-transform group-hover:translate-x-0.5">→</span>
               </Link>
             </div>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
