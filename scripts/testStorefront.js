@@ -30,7 +30,7 @@ async function runStorefrontTests() {
 
         // Set up test express app mirroring server.js
         const app = express();
-        app.set("view engine", "ejs");
+        // EJS removed - SPA React only
         app.set("views", path.join(__dirname, "../views"));
         app.use(express.urlencoded({ extended: true }));
         app.use(express.json());

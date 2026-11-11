@@ -92,7 +92,7 @@ export function logout(req, res, next) {
 }
 
 export function showChangePassword(req, res) {
-    res.render("auth/change-password", { error: null });
+    res.redirect(302, "/app");
 }
 
 export async function changePassword(req, res, next) {
@@ -148,11 +148,7 @@ export function showForgotPassword(req, res) {
             isAdmin ? "/admin" : "/dashboard"
         );
     }
-    res.render("auth/forgot-password", {
-        error: null,
-        submitted: false,
-        email: "",
-    });
+    res.redirect(302, "/app");
 }
 
 export async function forgotPassword(req, res, next) {
@@ -171,11 +167,7 @@ export async function forgotPassword(req, res, next) {
 
         // Generic confirmation to prevent user enumeration
         if (!user || !user.isActive) {
-            return res.render("auth/forgot-password", {
-                error: null,
-                submitted: true,
-                email,
-            });
+            return res.redirect(302, "/app");
         }
 
         // Generate cryptographically secure random token (32 bytes hex)
@@ -199,11 +191,7 @@ export async function forgotPassword(req, res, next) {
             console.error("[ForgotPassword] Error sending reset email:", err.message);
         });
 
-        res.render("auth/forgot-password", {
-            error: null,
-            submitted: true,
-            email,
-        });
+        res.redirect(302, "/app");
     } catch (error) {
         next(error);
     }
@@ -239,11 +227,7 @@ export async function showResetPassword(req, res, next) {
             });
         }
 
-        res.render("auth/reset-password", {
-            invalidToken: false,
-            error: null,
-            token,
-        });
+        res.redirect(302, "/app");
     } catch (error) {
         next(error);
     }

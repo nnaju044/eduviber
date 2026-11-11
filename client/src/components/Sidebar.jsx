@@ -1,5 +1,5 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 
 export default function Sidebar({ isOpen, onClose }) {
@@ -118,15 +118,16 @@ export default function Sidebar({ isOpen, onClose }) {
               </svg>
               <span>Devices & Settings</span>
             </NavLink>
-            <a
-              href="/courses"
+            <Link
+              to="/app/courses"
               className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-neutral-600 hover:text-[#CA8A04] hover:bg-neutral-100 transition min-h-[44px]"
+              onClick={onClose}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              <span>Browse Courses (EJS)</span>
-            </a>
+              <span>Explore Courses</span>
+            </Link>
           </nav>
         )}
       </div>

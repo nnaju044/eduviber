@@ -40,7 +40,7 @@ let baseUrl;
 
 async function setupTestApp() {
     testApp = express();
-    testApp.set("view engine", "ejs");
+    // EJS removed - SPA React only
     testApp.set("views", path.join(__dirname, "../views"));
     testApp.disable("x-powered-by");
 

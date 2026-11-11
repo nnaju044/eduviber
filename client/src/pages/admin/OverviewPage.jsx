@@ -56,14 +56,6 @@ export default function OverviewPage() {
             </svg>
             <span>Refresh Metrics</span>
           </button>
-          <a
-            href="/admin/courses"
-            className="px-3.5 py-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-700 transition-colors flex items-center gap-1.5"
-            title="Open Legacy EJS Admin"
-          >
-            <span>Legacy Admin</span>
-            <span className="text-[10px] text-amber-400 font-mono">↗</span>
-          </a>
         </div>
       </div>
 

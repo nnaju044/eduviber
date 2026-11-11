@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import LoadingSpinner from "../components/LoadingSpinner.jsx";
 
@@ -119,12 +119,12 @@ export default function LoginPage() {
             <label htmlFor="password" className="block text-xs font-bold text-neutral-700 uppercase tracking-wider">
               Password
             </label>
-            <a
-              href="/forgot-password"
+            <Link
+              to="/app/forgot-password"
               className="text-xs font-semibold text-[#CA8A04] hover:text-[#A16207] transition-colors"
             >
               Forgot password?
-            </a>
+            </Link>
           </div>
           <div className="relative">
             <input

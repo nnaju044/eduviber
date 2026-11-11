@@ -23,7 +23,7 @@ import ContentAccess from "../../models/ContentAccess.js";
 import Assignment from "../../models/Assignment.js";
 import AssignmentSubmission from "../../models/AssignmentSubmission.js";
 import { validateGoogleDriveLinks } from "../../utils/googleDriveValidator.js";
-import { notifyStudentOnReviewed } from "../../services/notificationService.js";
+import { notifyStudentOnReviewed, notifyStudentsOnAssignmentEnabled } from "../../services/notificationService.js";
 
 /**
  * Get authenticated teacher's profile
@@ -2211,6 +2211,16 @@ export async function createAssignment(req, res, next) {
             isEnabled: isEnabled !== false, // Defaults to true
         });
 
+        if (assignment.isEnabled) {
+            notifyStudentsOnAssignmentEnabled({
+                courseId: course._id,
+                assignment,
+                courseTitle: course.title,
+            }).catch((err) => {
+                console.error("[TeacherAssignment] Error dispatching student notification:", err.message);
+            });
+        }
+
         return sendApiSuccess(res, 201, {
             assignment: {
                 id: assignment._id.toString(),
@@ -2390,8 +2400,19 @@ export async function toggleAssignmentStatus(req, res, next) {
             return sendApiError(res, 403, "Access denied. You do not own this course.", "FORBIDDEN");
         }
 
+        const wasEnabled = assignment.isEnabled;
         assignment.isEnabled = isEnabled !== undefined ? Boolean(isEnabled) : !assignment.isEnabled;
         await assignment.save();
+
+        if (!wasEnabled && assignment.isEnabled) {
+            notifyStudentsOnAssignmentEnabled({
+                courseId: assignment.courseId._id,
+                assignment,
+                courseTitle: assignment.courseId.title,
+            }).catch((err) => {
+                console.error("[TeacherAssignment] Error dispatching student notification on enable:", err.message);
+            });
+        }
 
         return sendApiSuccess(res, 200, {
             assignmentId: assignment._id.toString(),

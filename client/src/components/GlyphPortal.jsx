@@ -72,6 +72,7 @@ export default function GlyphPortal({
   fontFamily = DEFAULT_FONT,
   fontWeight = 900,
   annotations = false,
+  showHint = true,
   enterLabel = "Explore Courses",
   className,
   style,
@@ -91,6 +92,8 @@ export default function GlyphPortal({
   const length = Number.isFinite(scrollLength) ? clamp(scrollLength, 1, 8) : 2.4;
   const weight = Number.isFinite(fontWeight) ? clamp(fontWeight, 1, 1000) : 900;
   const hasFront = front != null;
+  const hasEnterAction = Boolean(enterLabel);
+  const hintText = showHint ? (interactive ? "Scroll to enter." : annotations ? "A passage through type" : "") : "";
   const q = `:where(#${uid})`;
 
   useLayoutEffect(() => {
@@ -490,13 +493,20 @@ export default function GlyphPortal({
         >
           {text}
         </span>
-        <div data-gp-caption>
-          <span data-gp-hint aria-hidden="true">{interactive ? "Scroll to enter." : annotations ? "A passage through type" : ""}</span>
-          <a data-gp-enter href={`#${uid}-content`}>
-            {enterLabel}
-            <span aria-hidden="true">↘</span>
-          </a>
-        </div>
+        {/* Interactive Caption / Entry Controls */}
+        {(hintText || hasEnterAction) && (
+          <div data-gp-caption>
+            {hintText ? (
+              <span data-gp-hint aria-hidden="true">{hintText}</span>
+            ) : <span />}
+            {hasEnterAction && (
+              <a data-gp-enter href={`#${uid}-content`}>
+                {enterLabel}
+                <span aria-hidden="true">↘</span>
+              </a>
+            )}
+          </div>
+        )}
       </div>
       <div data-gp-content id={`${uid}-content`} tabIndex={-1}>
         {children ?? (

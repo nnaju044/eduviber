@@ -22,7 +22,7 @@ const notificationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["assignment_submitted", "assignment_resubmitted", "assignment_reviewed", "general"],
+      enum: ["assignment_created", "assignment_submitted", "assignment_resubmitted", "assignment_reviewed", "general"],
       default: "general",
     },
     data: {

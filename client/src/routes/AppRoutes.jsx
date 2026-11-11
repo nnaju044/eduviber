@@ -5,6 +5,10 @@ import AuthLayout from "../layouts/AuthLayout.jsx";
 import ProtectedRoute from "../components/ProtectedRoute.jsx";
 import HomePage from "../pages/HomePage.jsx";
 import LoginPage from "../pages/LoginPage.jsx";
+import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage.jsx";
+import ResetPasswordPage from "../pages/auth/ResetPasswordPage.jsx";
+import CourseCatalogPage from "../pages/public/CourseCatalogPage.jsx";
+import CourseDetailPage from "../pages/public/CourseDetailPage.jsx";
 import UnauthorizedPage from "../pages/UnauthorizedPage.jsx";
 import NotFoundPage from "../pages/NotFoundPage.jsx";
 import OverviewPage from "../pages/admin/OverviewPage.jsx";
@@ -52,7 +56,11 @@ export default function AppRoutes() {
     <Routes>
       {/* Compatibility aliases redirecting to canonical /app/* paths */}
       <Route path="/" element={<Navigate to="/app" replace />} />
+      <Route path="/courses" element={<Navigate to="/app/courses" replace />} />
+      <Route path="/courses/:slug" element={<Navigate to="/app/courses/:slug" replace />} />
       <Route path="/login" element={<Navigate to="/app/login" replace />} />
+      <Route path="/forgot-password" element={<Navigate to="/app/forgot-password" replace />} />
+      <Route path="/reset-password" element={<Navigate to="/app/reset-password" replace />} />
       <Route path="/admin" element={<Navigate to="/app/admin" replace />} />
       <Route path="/admin/*" element={<Navigate to="/app/admin" replace />} />
       <Route path="/teacher" element={<Navigate to="/app/teacher" replace />} />
@@ -64,12 +72,16 @@ export default function AppRoutes() {
       {/* Canonical React Public & General Pages */}
       <Route element={<AppLayout showSidebar={false} />}>
         <Route path="/app" element={<HomePage />} />
+        <Route path="/app/courses" element={<CourseCatalogPage />} />
+        <Route path="/app/courses/:slug" element={<CourseDetailPage />} />
         <Route path="/app/unauthorized" element={<UnauthorizedPage />} />
       </Route>
 
       {/* Canonical React Auth Layout */}
       <Route element={<AuthLayout />}>
         <Route path="/app/login" element={<LoginPage />} />
+        <Route path="/app/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/app/reset-password" element={<ResetPasswordPage />} />
       </Route>
 
       {/* Canonical React Role-Specific Protected Dashboards with Sidebar */}

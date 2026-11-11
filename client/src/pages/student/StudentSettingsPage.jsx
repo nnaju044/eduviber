@@ -308,8 +308,8 @@ export default function StudentSettingsPage() {
             type="button"
             onClick={() => setActiveTab(tab.id)}
             className={`px-4 py-2.5 border-b-2 flex items-center gap-2 whitespace-nowrap transition-colors ${activeTab === tab.id
-                ? "border-amber-500 text-neutral-900 bg-amber-500/5"
-                : "border-transparent text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50"
+              ? "border-amber-500 text-neutral-900 bg-amber-500/5"
+              : "border-transparent text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50"
               }`}
           >
             <span>{tab.icon}</span>
@@ -610,9 +610,9 @@ export default function StudentSettingsPage() {
                 <div className="border-t border-neutral-100 pt-4 text-xs text-neutral-500">
                   <p>
                     Forgot your current password? You can request a reset link at any time from the{" "}
-                    <a href="/forgot-password" className="text-amber-600 underline font-semibold">
+                    <Link to="/app/forgot-password" className="text-amber-600 underline font-semibold">
                       Password Recovery Page
-                    </a>.
+                    </Link>.
                   </p>
                 </div>
               </div>

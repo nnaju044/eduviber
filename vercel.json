@@ -16,7 +16,7 @@
     "api/index.js": {
       "maxDuration": 15,
       "memory": 1024,
-      "includeFiles": "{views/**,client/dist/**,public/**}"
+      "includeFiles": "{client/dist/**,public/**}"
     }
   }
 }

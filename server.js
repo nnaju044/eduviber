@@ -45,9 +45,6 @@ function resolveAppPath(relativePath) {
   return fromDirname;
 }
 
-app.set("view engine", "ejs");
-app.set("views", resolveAppPath("views"));
-
 // Defensive HTTP security headers
 app.use((req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
@@ -148,21 +145,30 @@ app.use((req, res, next) => {
     return res.redirect(302, target);
   }
 
-  // Serve React SPA for /app and any /app/* route
-  if (req.path === "/app" || req.path.startsWith("/app/")) {
-    if (fs.existsSync(clientDistIndex)) {
-      return res.sendFile(clientDistIndex);
-    }
+  // Serve React SPA for any page route (client-side routing will resolve or render NotFoundPage)
+  if (fs.existsSync(clientDistIndex)) {
+    return res.sendFile(clientDistIndex);
   }
+
   next();
 });
 
-// Catch-all 404 handler
+// Catch-all 404 handler for unmatched API requests or when client build is absent
 app.use((req, res) => {
-  res.status(404).render("public/404", {
-    message: "Page Not Found",
-    user: req.session?.user || null,
-  });
+  const isApi = req.path.startsWith("/api") || req.xhr || req.headers.accept?.includes("application/json");
+  if (isApi) {
+    return res.status(404).json({
+      success: false,
+      message: `Endpoint ${req.method} ${req.originalUrl} not found.`,
+      code: "NOT_FOUND",
+    });
+  }
+
+  if (fs.existsSync(clientDistIndex)) {
+    return res.status(404).sendFile(clientDistIndex);
+  }
+
+  return res.status(404).send("Page Not Found");
 });
 
 // Centralized error handler - masks internal errors and prevents stack trace leakage
@@ -173,15 +179,16 @@ app.use((err, req, res, next) => {
     return next(err);
   }
 
-  const isApi = req.xhr || req.headers.accept?.includes("application/json");
+  const isApi = req.path.startsWith("/api") || req.xhr || req.headers.accept?.includes("application/json");
   if (isApi) {
     return res.status(500).json({ error: "An unexpected error occurred. Please try again later." });
   }
 
-  res.status(500).render("public/404", {
-    message: "An unexpected error occurred. Please try again later.",
-    user: req.session?.user || null,
-  });
+  if (fs.existsSync(clientDistIndex)) {
+    return res.status(500).sendFile(clientDistIndex);
+  }
+
+  return res.status(500).send("An unexpected error occurred. Please try again later.");
 });
 
 async function startServer() {

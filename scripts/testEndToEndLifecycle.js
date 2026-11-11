@@ -48,7 +48,7 @@ function createApp() {
     app = express();
     app.disable("x-powered-by");
 
-    app.set("view engine", "ejs");
+    // EJS removed - SPA React only
     app.set("views", path.join(__dirname, "../views"));
 
     app.use(express.urlencoded({ extended: true, limit: "5mb" }));

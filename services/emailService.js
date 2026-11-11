@@ -152,7 +152,7 @@ function wrapEmailHtml({ title, bodyContent }) {
  */
 export async function sendPasswordResetEmail({ user, resetToken, baseUrl }) {
   const rootUrl = baseUrl || process.env.APP_BASE_URL || "http://localhost:2000";
-  const resetUrl = `${rootUrl}/reset-password?token=${resetToken}`;
+  const resetUrl = `${rootUrl}/app/reset-password?token=${resetToken}`;
   const subject = "Reset your password — EDUviber";
 
   const bodyContent = `
@@ -185,7 +185,7 @@ export async function sendPasswordResetEmail({ user, resetToken, baseUrl }) {
  */
 export async function sendWelcomeSetupEmail({ user, resetToken, baseUrl }) {
   const rootUrl = baseUrl || process.env.APP_BASE_URL || "http://localhost:2000";
-  const setupUrl = `${rootUrl}/reset-password?token=${resetToken}`;
+  const setupUrl = `${rootUrl}/app/reset-password?token=${resetToken}`;
   const subject = "Welcome to EDUviber — Set up your password";
 
   const bodyContent = `

@@ -18,15 +18,6 @@ export default function SuperAdminDashboard() {
             Platform-wide governance, system metrics, and teacher approvals
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <a
-            href="/admin/courses"
-            className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-700 transition-colors flex items-center gap-1.5"
-          >
-            <span>Open EJS Admin</span>
-            <span className="text-[10px] text-amber-400 font-mono">↗</span>
-          </a>
-        </div>
       </div>
 
       {/* Metrics Placeholders */}

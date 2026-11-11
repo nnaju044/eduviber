@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import RoleBadge from "../components/RoleBadge.jsx";
 import GlyphPortal from "../components/GlyphPortal.jsx";
+import HeroDoodleOverlay from "../components/HeroDoodleOverlay.jsx";
 
 function HeroContentLayer({
   isDark = false,
@@ -78,17 +79,25 @@ function HeroContentLayer({
 export default function HomePage() {
   const { user, isAuthenticated, role, isSuperAdmin, isTeacher, isStudent } = useAuth();
 
+  // Random focus letter from valid EDUVIBER characters, consistent per page session
+  const randomFocusChar = useMemo(() => {
+    const letters = ["E", "D", "U", "V", "I", "B", "R"];
+    return letters[Math.floor(Math.random() * letters.length)];
+  }, []);
+
   return (
     <div className="space-y-20 pb-16">
       {/* Scroll-Driven GlyphPortal Experience */}
-      <div className="w-full bg-white">
+      <div className="w-full bg-white relative">
         <GlyphPortal
           word="EDUVIBER"
-          focusChar="V"
-          interactive={true}
+          focusChar={randomFocusChar}
+          interactive={false}
           scrollLength={2.6}
           fontWeight={900}
-          enterLabel="Enter Platform"
+          showHint={false}
+          enterLabel=""
+          front={<HeroDoodleOverlay />}
         >
           <div className="relative w-full grid grid-cols-1 grid-rows-1">
             {/* Dark side (Black background): Crisp White fonts */}
@@ -214,7 +223,7 @@ export default function HomePage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 max-w-4xl mx-auto">
           {/* Student Portal */}
           <div className="group flex flex-col justify-between p-6 sm:p-7 rounded-2xl bg-neutral-50/60 border border-neutral-200/90 hover:border-black/30 hover:bg-neutral-50 transition-all duration-200">
             <div className="space-y-4">
@@ -274,38 +283,6 @@ export default function HomePage() {
                 className="inline-flex items-center gap-2 text-xs font-bold text-black group-hover:text-[#CA8A04] transition-colors min-h-[44px]"
               >
                 <span>Open Teacher Studio</span>
-                <span className="transition-transform group-hover:translate-x-0.5">→</span>
-              </Link>
-            </div>
-          </div>
-
-          {/* Admin Portal */}
-          <div className="group flex flex-col justify-between p-6 sm:p-7 rounded-2xl bg-neutral-50/60 border border-neutral-200/90 hover:border-black/30 hover:bg-neutral-50 transition-all duration-200">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[11px] font-extrabold uppercase tracking-wider text-neutral-900">
-                  Administration
-                </span>
-                <span className="text-xs font-semibold text-neutral-400">
-                  03
-                </span>
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-neutral-900 tracking-tight">
-                  Admin Console
-                </h3>
-                <p className="text-xs text-neutral-600 font-medium mt-2 leading-relaxed">
-                  Review platform activity, approve teacher accounts, publish courses to the catalog, and manage platform operations.
-                </p>
-              </div>
-            </div>
-
-            <div className="pt-6 mt-6 border-t border-neutral-200/70">
-              <Link
-                to="/app/admin"
-                className="inline-flex items-center gap-2 text-xs font-bold text-black group-hover:text-[#CA8A04] transition-colors min-h-[44px]"
-              >
-                <span>Launch Admin Console</span>
                 <span className="transition-transform group-hover:translate-x-0.5">→</span>
               </Link>
             </div>

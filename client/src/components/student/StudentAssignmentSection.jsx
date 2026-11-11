@@ -148,13 +148,27 @@ export default function StudentAssignmentSection({ courseId, activeLessonId, cur
     return null; // Keep learning interface minimal if no assignments exist for this course
   }
 
-  // Filter or prioritize assignments relevant to currently active lesson or module
+  // Filter assignments relevant to currently active lesson or module, plus course-wide assignments
   const relevantAssignments = assignments.filter((a) => {
-    if (a.scope === "course") return true;
-    if (a.scope === "module" && a.moduleName === currentModuleName) return true;
-    if (a.scope === "lesson" && a.lessonId === activeLessonId) return true;
-    return true; // Display all unlocked course assignments in this section
+    if (a.scope === "lesson") {
+      return a.lessonId === activeLessonId;
+    }
+    if (a.scope === "module") {
+      return a.moduleName === currentModuleName;
+    }
+    if (a.scope === "course") {
+      return true;
+    }
+    return false;
   });
+
+  // Do not render empty panel if no assignment applies to this lesson / module / course context
+  if (relevantAssignments.length === 0) {
+    return null;
+  }
+
+  // Count how many are specific to this lesson vs module/course
+  const lessonSpecificCount = relevantAssignments.filter((a) => a.scope === "lesson").length;
 
   return (
     <section
@@ -170,7 +184,7 @@ export default function StudentAssignmentSection({ courseId, activeLessonId, cur
             </span>
           </h3>
           <p className="text-[11px] text-neutral-500 mt-0.5">
-            Submit homework solutions via Google Drive links and written answers.
+            Submit homework solutions via Google Drive links and optional written answers.
           </p>
         </div>
       </div>
@@ -182,40 +196,55 @@ export default function StudentAssignmentSection({ courseId, activeLessonId, cur
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span
-                    className={`px-1.5 py-0.2 rounded text-[9px] font-bold uppercase tracking-wider ${
-                      assignment.scope === "course"
+                    className={`px-1.5 py-0.2 rounded text-[9px] font-bold uppercase tracking-wider ${assignment.scope === "course"
                         ? "bg-sky-50 text-sky-700 border border-sky-200"
                         : assignment.scope === "module"
-                        ? "bg-purple-50 text-purple-700 border border-purple-200"
-                        : "bg-amber-50 text-[#CA8A04] border border-amber-200"
-                    }`}
+                          ? "bg-purple-50 text-purple-700 border border-purple-200"
+                          : "bg-amber-50 text-[#CA8A04] border border-amber-200"
+                      }`}
                   >
                     {assignment.scope} assignment
                   </span>
 
                   <span
-                    className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
-                      assignment.status === "reviewed"
+                    className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${assignment.status === "reviewed"
                         ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                         : assignment.status === "submitted"
-                        ? "bg-amber-50 text-amber-700 border border-amber-200"
-                        : "bg-neutral-100 text-neutral-600 border border-neutral-200"
-                    }`}
+                          ? "bg-amber-50 text-amber-700 border border-amber-200"
+                          : "bg-neutral-100 text-neutral-600 border border-neutral-200"
+                      }`}
                   >
                     {assignment.status === "not_submitted"
                       ? "Not Submitted"
                       : assignment.status === "reviewed"
-                      ? "✓ Reviewed"
-                      : "Submitted"}
+                        ? "✓ Reviewed"
+                        : "Submitted"}
                   </span>
                 </div>
 
                 <h4 className="text-xs sm:text-sm font-bold text-neutral-900 mt-1">
                   {assignment.title}
                 </h4>
-                <p className="text-xs text-neutral-600 mt-0.5 leading-relaxed">
+                <p className="text-xs text-neutral-600 mt-0.5 leading-relaxed whitespace-pre-wrap">
                   {assignment.description}
                 </p>
+
+                {/* Scope context details, submission date & review info */}
+                <div className="flex items-center gap-3 text-[11px] text-neutral-500 mt-1.5 flex-wrap">
+                  {assignment.latestSubmission?.submittedAt && (
+                    <span>
+                      <strong className="text-neutral-700">Last submitted:</strong>{" "}
+                      {new Date(assignment.latestSubmission.submittedAt).toLocaleDateString()}{" "}
+                      (v{assignment.latestSubmission.version})
+                    </span>
+                  )}
+                  {assignment.isReviewed && assignment.latestSubmission?.reviewedAt && (
+                    <span className="text-emerald-700 font-medium">
+                      ✓ Reviewed by {assignment.latestSubmission.reviewedBy || "Instructor"} on{" "}
+                      {new Date(assignment.latestSubmission.reviewedAt).toLocaleDateString()}
+                    </span>
+                  )}
+                </div>
 
                 {/* Teacher Resource Links */}
                 {assignment.resourceLinks && assignment.resourceLinks.length > 0 && (
@@ -418,11 +447,10 @@ export default function StudentAssignmentSection({ courseId, activeLessonId, cur
                 historySubmissions.map((sub, idx) => (
                   <div
                     key={sub.id}
-                    className={`p-3.5 rounded-xl border space-y-2 ${
-                      idx === 0
+                    className={`p-3.5 rounded-xl border space-y-2 ${idx === 0
                         ? "bg-amber-50/40 border-amber-200"
                         : "bg-neutral-50 border-neutral-200 opacity-80"
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -433,11 +461,10 @@ export default function StudentAssignmentSection({ courseId, activeLessonId, cur
                           </span>
                         )}
                         <span
-                          className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
-                            sub.status === "reviewed"
+                          className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${sub.status === "reviewed"
                               ? "bg-emerald-100 text-emerald-800"
                               : "bg-amber-100 text-amber-800"
-                          }`}
+                            }`}
                         >
                           {sub.status.toUpperCase()}
                         </span>

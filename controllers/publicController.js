@@ -49,10 +49,7 @@ export async function showLandingPage(req, res, next) {
             };
         });
 
-        res.render("public/landing", {
-            courses: enrichedCourses,
-            user,
-        });
+        res.redirect(302, "/app");
     } catch (error) {
         next(error);
     }
@@ -102,10 +99,7 @@ export async function listPublicCourses(req, res, next) {
             };
         });
 
-        res.render("public/catalog", {
-            courses: enrichedCourses,
-            user,
-        });
+        res.redirect(302, "/app");
     } catch (error) {
         next(error);
     }
@@ -179,14 +173,7 @@ export async function showCourseDetail(req, res, next) {
             isEnrolled = Boolean(enrollment) || isAdmin;
         }
 
-        res.render("public/course-detail", {
-            course,
-            modules,
-            totalLessons: lessons.length,
-            totalMinutes: Math.round(totalDurationSeconds / 60),
-            isEnrolled,
-            user,
-        });
+        res.redirect(302, "/app");
     } catch (error) {
         next(error);
     }
@@ -299,10 +286,7 @@ export async function showEnrollmentPage(req, res, next) {
 
         // Check if user is logged in
         if (!user) {
-            return res.render("public/enroll-login-required", {
-                course,
-                user: null,
-            });
+            return res.redirect(302, "/app");
         }
 
         // Check if already active
@@ -326,15 +310,7 @@ export async function showEnrollmentPage(req, res, next) {
         const pendingPayment = latestPayment && latestPayment.status === "pending" ? latestPayment : null;
         const rejectedPayment = latestPayment && latestPayment.status === "rejected" ? latestPayment : null;
 
-        res.render("public/enroll", {
-            course,
-            user,
-            paymentConfig: getPaymentInstructionsConfig(),
-            pendingPayment,
-            rejectedPayment,
-            error: null,
-            values: {},
-        });
+        res.redirect(302, "/app");
     } catch (error) {
         next(error);
     }
@@ -454,11 +430,7 @@ export async function submitEnrollmentPayment(req, res, next) {
             console.error("[Payment] Error sending payment submitted email:", err.message);
         });
 
-        res.render("public/enroll-success", {
-            course,
-            user,
-            payment,
-        });
+        res.redirect(302, "/app");
     } catch (error) {
         next(error);
     }

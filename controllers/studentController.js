@@ -82,18 +82,7 @@ export async function watchLesson(req, res, next) {
 
         res.set("Cache-Control", "no-store, private");
 
-        res.render("student/lesson", {
-            course,
-            lesson,
-            videoUrl: createSignedEmbedUrl(lesson.bunnyVideoId),
-            studentEmail: req.session.user.email,
-            lastPositionSeconds: progress?.lastPositionSeconds || 0,
-            isCompleted: Boolean(progress?.completed),
-            prevLesson,
-            nextLesson,
-            currentIndex,
-            totalLessonsCount: allLessons.length,
-        });
+        res.redirect(302, "/app");
     } catch (error) {
         next(error);
     }
@@ -338,17 +327,7 @@ export async function studentDashboard(req, res, next) {
             .sort({ createdAt: -1 })
             .lean();
 
-        res.render("student/dashboard", {
-            student: user,
-            courses: coursesWithData,
-            payments,
-            stats: {
-                totalCourses,
-                totalCompletedLessons,
-                totalPublishedLessons,
-                overallProgressPercent,
-            },
-        });
+        res.redirect(302, "/app");
     } catch (error) {
         next(error);
     }

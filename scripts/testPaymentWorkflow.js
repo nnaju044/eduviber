@@ -36,7 +36,7 @@ async function runPaymentWorkflowTests() {
         console.log(`✓ Connected to isolated test database: [${mongoose.connection.name}]`);
 
         const app = express();
-        app.set("view engine", "ejs");
+        // EJS removed - SPA React only
         app.set("views", path.join(__dirname, "../views"));
         app.use(express.urlencoded({ extended: true, limit: "5mb" }));
         app.use(express.json({ limit: "5mb" }));

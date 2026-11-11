@@ -303,7 +303,8 @@ export async function assertStudentAssignmentAccess(assignment, studentId) {
         if (!assignment.lessonId) {
             return { authorized: false, code: "LESSON_NOT_FOUND", message: "Lesson not found." };
         }
-        const lessonInfo = effective.lessons[assignment.lessonId.toString()];
+        const lessonTargetId = assignment.lessonId._id ? assignment.lessonId._id.toString() : assignment.lessonId.toString();
+        const lessonInfo = effective.lessons[lessonTargetId];
         if (!lessonInfo) {
             return { authorized: false, code: "LESSON_NOT_FOUND", message: "Lesson not found in access roster." };
         }

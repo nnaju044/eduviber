@@ -80,3 +80,35 @@ export async function notifyStudentOnReviewed({ studentId, assignment, course })
     },
   });
 }
+
+/**
+ * Notify enrolled students when a new assignment is created and enabled
+ */
+export async function notifyStudentsOnAssignmentEnabled({ courseId, assignment, courseTitle }) {
+  try {
+    const Enrollment = (await import("../models/Enrollment.js")).default;
+    const enrollments = await Enrollment.find({ courseId, status: "active" }).select("userId").lean();
+    if (!enrollments || enrollments.length === 0) return;
+
+    const title = "New Assignment Available";
+    const scopeLabel = assignment.scope === "course" ? "Course" : assignment.scope === "module" ? `Module "${assignment.moduleName}"` : "Lesson";
+    const message = `A new ${scopeLabel} assignment "${assignment.title}" is now available in "${courseTitle}".`;
+
+    for (const enrollment of enrollments) {
+      await createNotification({
+        userId: enrollment.userId,
+        title,
+        message,
+        type: "assignment_created",
+        data: {
+          courseId,
+          assignmentId: assignment._id,
+          assignmentTitle: assignment.title,
+          courseTitle,
+        },
+      });
+    }
+  } catch (err) {
+    console.error("[NotificationService] Error notifying students on assignment enabled:", err.message);
+  }
+}

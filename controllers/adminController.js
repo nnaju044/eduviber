@@ -32,17 +32,7 @@ export async function dashboard(req, res, next) {
             Course.find().sort({ createdAt: -1 }).limit(5).lean(),
         ]);
 
-        res.render("admin/dashboard", {
-            admin: req.session.user,
-            stats: {
-                totalStudents,
-                totalCourses,
-                totalLessons,
-                activeEnrollments,
-                pendingPayments,
-            },
-            recentCourses,
-        });
+        res.redirect(302, "/app");
     } catch (error) {
         next(error);
     }
@@ -65,19 +55,14 @@ export async function listCourses(req, res, next) {
             lessonCounts.map((item) => [item._id.toString(), item.count])
         );
 
-        res.render("admin/courses/index", {
-            courses: courses.map((course) => ({
-                ...course,
-                lessonCount: countMap.get(course._id.toString()) || 0,
-            })),
-        });
+        res.redirect(302, "/app");
     } catch (error) {
         next(error);
     }
 }
 
 export function showCreateCourse(req, res) {
-    res.render("admin/courses/new", { error: null, values: {} });
+    res.redirect(302, "/app");
 }
 
 export async function createCourse(req, res, next) {
@@ -180,15 +165,7 @@ export async function showEditCourse(req, res, next) {
             Enrollment.countDocuments({ courseId: course._id }),
         ]);
 
-        res.render("admin/courses/edit", {
-            course,
-            values: course,
-            error: null,
-            lessonCount,
-            paymentCount,
-            enrollmentCount,
-            hasDependencies: paymentCount > 0 || enrollmentCount > 0,
-        });
+        res.redirect(302, "/app");
     } catch (error) {
         next(error);
     }
@@ -367,7 +344,7 @@ export async function listLessons(req, res, next) {
             .sort({ order: 1 })
             .lean();
 
-        res.render("admin/lessons/index", { course, lessons });
+        res.redirect(302, "/app");
     } catch (error) {
         next(error);
     }
@@ -386,11 +363,7 @@ export async function showCreateLesson(req, res, next) {
             .select("order")
             .lean();
 
-        res.render("admin/lessons/new", {
-            course,
-            error: null,
-            values: { order: (lastLesson?.order || 0) + 1 },
-        });
+        res.redirect(302, "/app");
     } catch (error) {
         next(error);
     }
@@ -539,13 +512,7 @@ export async function showEditLesson(req, res, next) {
 
         const progressCount = await Progress.countDocuments({ lessonId: lesson._id });
 
-        res.render("admin/lessons/edit", {
-            course,
-            lesson,
-            values: lesson,
-            error: null,
-            progressCount,
-        });
+        res.redirect(302, "/app");
     } catch (error) {
         next(error);
     }
@@ -756,20 +723,14 @@ export async function listStudents(req, res, next) {
 
         const totalPages = Math.ceil(totalCount / limit) || 1;
 
-        res.render("admin/students/index", {
-            students: enrichedStudents,
-            search: rawSearch,
-            page,
-            totalPages,
-            totalCount,
-        });
+        res.redirect(302, "/app");
     } catch (error) {
         next(error);
     }
 }
 
 export function showCreateStudent(req, res) {
-    res.render("admin/students/new", { error: null, values: {} });
+    res.redirect(302, "/app");
 }
 
 export async function createStudent(req, res, next) {
@@ -881,13 +842,7 @@ export async function showStudentDetail(req, res, next) {
             (c) => !enrolledCourseIds.has(c._id.toString())
         );
 
-        res.render("admin/students/show", {
-            student,
-            enrollments,
-            availableCourses,
-            error: req.query.error || null,
-            success: req.query.success || null,
-        });
+        res.redirect(302, "/app");
     } catch (error) {
         next(error);
     }
@@ -922,17 +877,7 @@ export async function listEnrollments(req, res, next) {
 
         const totalPages = Math.ceil(totalCount / limit) || 1;
 
-        res.render("admin/enrollments/index", {
-            enrollments,
-            publishedCourses,
-            students,
-            currentStatus: rawStatus,
-            page,
-            totalPages,
-            totalCount,
-            error: req.query.error || null,
-            success: req.query.success || null,
-        });
+        res.redirect(302, "/app");
     } catch (error) {
         next(error);
     }
@@ -1068,21 +1013,7 @@ export async function listPayments(req, res, next) {
 
         const totalPages = Math.ceil(totalCount / limit) || 1;
 
-        res.render("admin/payments/index", {
-            payments,
-            counts: {
-                pending: pendingCount,
-                approved: approvedCount,
-                rejected: rejectedCount,
-                all: pendingCount + approvedCount + rejectedCount,
-            },
-            currentStatus: rawStatus,
-            page,
-            totalPages,
-            totalCount,
-            error: req.query.error || null,
-            success: req.query.success || null,
-        });
+        res.redirect(302, "/app");
     } catch (error) {
         next(error);
     }
